@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@theme {
+  --color-azul-noche: #134174;
+  --color-azul-medio: #0087CF;
+  --color-amarillo: #FFDD00;
+  --color-rojo: #E00914;
+  --color-dorado: #D4AF37;
+  --color-dorado-oscuro: #C8A951;
+
+  --font-display: 'Antonio', sans-serif;
+  --font-body: 'Roboto Condensed', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #134174;
+  font-family: 'Roboto Condensed', sans-serif;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Shimmer para el título de intro */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #D4AF37 0%,
+    #D4AF37 30%,
+    #f5e06e 45%,
+    #fffbe0 50%,
+    #f5e06e 55%,
+    #D4AF37 70%,
+    #D4AF37 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2500ms ease-in-out infinite;
+}
+
+/* Fade-in escalonado de provincias */
+@keyframes fadeInProvince {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Titileo de provincia */
+@keyframes twinklePulse {
+  0%, 100% { fill-opacity: 0.22; }
+  50%       { fill-opacity: 0.75; }
+}
+
+/* Pulso del chevron en intro */
+@keyframes chevronPulse {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50%       { opacity: 0.85; transform: translateY(8px); }
+}
+
+/* Zoom del título al salir de intro */
+@keyframes titleZoomOut {
+  from { transform: scale(1);  opacity: 1; }
+  to   { transform: scale(10); opacity: 0; }
+}
+
+@keyframes screenFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text {
+    background: none;
+    -webkit-text-fill-color: #D4AF37;
+    color: #D4AF37;
+    animation: none;
+  }
+  @keyframes fadeInProvince { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes twinklePulse   { 0%, 100% { fill-opacity: 0.22; } }
+  @keyframes chevronPulse   { 0%, 100% { opacity: 0.65; } }
+  @keyframes titleZoomOut   { from { opacity: 1; } to { opacity: 0; } }
+}
