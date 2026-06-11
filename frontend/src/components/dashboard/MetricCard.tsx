@@ -20,8 +20,8 @@ export function MetricCard({ label, value, subtitle, highlight = false }: Metric
       }}
     >
       <span
-        className="text-xs uppercase tracking-widest"
-        style={{ color: '#0087CF', fontFamily: "'Roboto Condensed', sans-serif" }}
+        className="uppercase tracking-widest"
+        style={{ color: '#0087CF', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13 }}
       >
         {label}
       </span>
@@ -38,8 +38,7 @@ export function MetricCard({ label, value, subtitle, highlight = false }: Metric
       </span>
       {subtitle && (
         <span
-          className="text-sm"
-          style={{ color: 'rgba(19, 65, 116, 0.90)', fontFamily: "'Roboto Condensed', sans-serif" }}
+          style={{ color: 'rgba(19, 65, 116, 0.90)', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 15 }}
         >
           {subtitle}
         </span>

@@ -30,8 +30,8 @@ export function SubactivitiesBar({ subactivities }: SubactivitiesBarProps) {
       }}
     >
       <span
-        className="text-xs uppercase tracking-widest"
-        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700 }}
+        className="uppercase tracking-widest"
+        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 13 }}
       >
         Comparativo subactividades
       </span>

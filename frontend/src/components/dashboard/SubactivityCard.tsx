@@ -99,8 +99,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
                   {value}
                 </div>
                 <div
-                  className="text-xs mt-1"
-                  style={{ color: 'rgba(19,65,116,0.60)', fontFamily: "'Roboto Condensed', sans-serif" }}
+                  style={{ color: 'rgba(19,65,116,0.60)', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, marginTop: 4 }}
                 >
                   {label}
                 </div>
@@ -110,8 +109,8 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
 
           {recentActivities.length > 0 && (
             <div>
-              <p className="text-xs uppercase tracking-widest mb-2"
-                style={{ color: 'rgba(19,65,116,0.50)', fontFamily: "'Roboto Condensed', sans-serif" }}>
+              <p className="uppercase tracking-widest mb-2"
+                style={{ color: 'rgba(19,65,116,0.50)', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13 }}>
                 Últimas actividades
               </p>
               <div className="flex flex-col gap-1">

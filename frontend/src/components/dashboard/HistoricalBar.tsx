@@ -24,8 +24,8 @@ export function HistoricalBar({ data, currentYearPercentage }: HistoricalBarProp
       }}
     >
       <span
-        className="text-xs uppercase tracking-widest block mb-4"
-        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700 }}
+        className="uppercase tracking-widest block mb-4"
+        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 13 }}
       >
         Histórico de cumplimiento anual
       </span>

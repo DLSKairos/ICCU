@@ -25,8 +25,8 @@ export function ProgressPie({ executed, denominator, label = 'Avance del períod
       }}
     >
       <span
-        className="text-xs uppercase tracking-widest"
-        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700 }}
+        className="uppercase tracking-widest"
+        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700, fontSize: 13 }}
       >
         {label}
       </span>
