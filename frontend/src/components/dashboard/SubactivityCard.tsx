@@ -19,11 +19,11 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
     <div
       className="rounded-xl border overflow-hidden transition-all duration-250"
       style={{
-        background: 'rgba(0, 180, 166, 0.08)',
+        background: 'rgba(255, 255, 255, 0.97)',
         backdropFilter: 'blur(16px) saturate(180%)',
         WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-        borderColor: expanded ? 'rgba(212,175,55,0.4)' : 'rgba(0, 180, 166, 0.25)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+        borderColor: expanded ? 'rgba(212,175,55,0.4)' : 'rgba(0, 135, 207, 0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1)',
       }}
     >
       {/* Header colapsado */}
@@ -36,7 +36,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
           <div className="flex items-center justify-between mb-2">
             <span
               className="font-medium truncate"
-              style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 15, color: '#fff' }}
+              style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 15, color: '#134174' }}
             >
               {metrics.subactivityName}
             </span>
@@ -47,7 +47,10 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
               {metrics.percentage}%
             </span>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+          <div
+            className="w-full rounded-full h-2 overflow-hidden"
+            style={{ background: 'rgba(19,65,116,0.10)' }}
+          >
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
@@ -64,7 +67,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
           fill="none"
           className="shrink-0 transition-transform duration-250"
           style={{
-            color: 'rgba(255,255,255,0.4)',
+            color: 'rgba(19,65,116,0.40)',
             transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
         >
@@ -74,7 +77,10 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
 
       {/* Detalle expandido */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-white/10 pt-3 flex flex-col gap-3">
+        <div
+          className="px-4 pb-4 pt-3 flex flex-col gap-3"
+          style={{ borderTop: '1px solid rgba(19,65,116,0.10)' }}
+        >
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Ejecutado', value: metrics.executed },
@@ -94,7 +100,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
                 </div>
                 <div
                   className="text-xs mt-1"
-                  style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'Roboto Condensed', sans-serif" }}
+                  style={{ color: 'rgba(19,65,116,0.60)', fontFamily: "'Roboto Condensed', sans-serif" }}
                 >
                   {label}
                 </div>
@@ -105,7 +111,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
           {recentActivities.length > 0 && (
             <div>
               <p className="text-xs uppercase tracking-widest mb-2"
-                style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Roboto Condensed', sans-serif" }}>
+                style={{ color: 'rgba(19,65,116,0.50)', fontFamily: "'Roboto Condensed', sans-serif" }}>
                 Últimas actividades
               </p>
               <div className="flex flex-col gap-1">
@@ -120,7 +126,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
                         day: '2-digit', month: 'short',
                       })}
                     </span>
-                    <span style={{ color: 'rgba(255,255,255,0.75)' }} className="truncate">{a.title}</span>
+                    <span style={{ color: 'rgba(19,65,116,0.80)' }} className="truncate">{a.title}</span>
                   </div>
                 ))}
               </div>

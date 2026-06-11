@@ -22,30 +22,30 @@ export function SubactivitiesBar({ subactivities }: SubactivitiesBarProps) {
     <div
       className="rounded-xl p-5 border flex flex-col gap-3"
       style={{
-        background: 'rgba(0, 180, 166, 0.08)',
+        background: 'rgba(255, 255, 255, 0.97)',
         backdropFilter: 'blur(16px) saturate(180%)',
         WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-        borderColor: 'rgba(0, 180, 166, 0.25)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+        borderColor: 'rgba(0, 135, 207, 0.28)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1)',
       }}
     >
       <span
         className="text-xs uppercase tracking-widest"
-        style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'Roboto Condensed', sans-serif" }}
+        style={{ color: '#134174', fontFamily: "'Roboto Condensed', sans-serif", fontWeight: 700 }}
       >
         Comparativo subactividades
       </span>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(19,65,116,0.08)" />
           <XAxis
             dataKey="name"
-            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11, fontFamily: "'Roboto Condensed', sans-serif" }}
+            tick={{ fill: 'rgba(19,65,116,0.65)', fontSize: 11, fontFamily: "'Roboto Condensed', sans-serif" }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: "'Roboto Condensed', sans-serif" }}
+            tick={{ fill: 'rgba(19,65,116,0.55)', fontSize: 11, fontFamily: "'Roboto Condensed', sans-serif" }}
             axisLine={false}
             tickLine={false}
           />

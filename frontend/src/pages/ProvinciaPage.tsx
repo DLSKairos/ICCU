@@ -90,8 +90,8 @@ export function ProvinciaPage() {
           style={{
             width: sidebarOpen ? 220 : 36,
             minHeight: 'calc(100vh - 77px)',
-            borderColor: 'rgba(212,175,55,0.15)',
-            background: 'rgba(19,65,116,0.7)',
+            borderColor: 'rgba(0,135,207,0.18)',
+            background: 'rgba(13,52,96,0.80)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
           }}
@@ -143,17 +143,17 @@ export function ProvinciaPage() {
                       style={{
                         display: 'block',
                         padding: '10px 14px',
-                        background: isActive ? 'rgba(212,175,55,0.15)' : 'transparent',
+                        background: isActive ? 'rgba(255,255,255,0.22)' : 'transparent',
                         backdropFilter: isActive ? 'blur(12px) saturate(160%)' : 'none',
                         WebkitBackdropFilter: isActive ? 'blur(12px) saturate(160%)' : 'none',
                         border: isActive
-                          ? '1px solid rgba(212,175,55,0.4)'
+                          ? '1px solid rgba(255,255,255,0.40)'
                           : '1px solid transparent',
                         borderRadius: 9999,
                         boxShadow: isActive
-                          ? '0 2px 10px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.15)'
+                          ? '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.25)'
                           : 'none',
-                        color: isActive ? '#D4AF37' : 'rgba(255,255,255,0.7)',
+                        color: isActive ? '#ffffff' : 'rgba(255,255,255,0.60)',
                         fontFamily: "'Roboto Condensed', sans-serif",
                         fontSize: 14,
                         fontWeight: isActive ? 600 : 400,

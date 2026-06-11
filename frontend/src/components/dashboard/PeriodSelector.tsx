@@ -13,12 +13,12 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
     <div
       className="flex gap-0.5 p-1 w-fit"
       style={{
-        background: 'rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: '1px solid rgba(255,255,255,0.12)',
+        background: 'rgba(255,255,255,0.97)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        border: '1px solid rgba(0,135,207,0.28)',
         borderRadius: 9999,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.14)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,1)',
       }}
     >
       {PERIODS.map(p => (
@@ -33,18 +33,14 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
             letterSpacing: '0.07em',
             textTransform: 'uppercase',
             borderRadius: 9999,
-            border: value === p
-              ? '1px solid rgba(212,175,55,0.45)'
-              : '1px solid transparent',
-            background: value === p
-              ? 'rgba(212,175,55,0.18)'
-              : 'transparent',
-            backdropFilter: value === p ? 'blur(8px)' : 'none',
-            WebkitBackdropFilter: value === p ? 'blur(8px)' : 'none',
+            border: value === p ? '1px solid rgba(19,65,116,0.30)' : '1px solid transparent',
+            background: value === p ? 'rgba(19,65,116,0.16)' : 'transparent',
+            backdropFilter: value === p ? 'blur(8px) saturate(160%)' : 'none',
+            WebkitBackdropFilter: value === p ? 'blur(8px) saturate(160%)' : 'none',
             boxShadow: value === p
-              ? '0 2px 12px rgba(212,175,55,0.18), inset 0 1px 0 rgba(255,255,255,0.2)'
+              ? '0 2px 10px rgba(19,65,116,0.12), inset 0 1px 0 rgba(255,255,255,0.6)'
               : 'none',
-            color: value === p ? '#D4AF37' : 'rgba(255,255,255,0.55)',
+            color: value === p ? '#134174' : 'rgba(19,65,116,0.55)',
           }}
         >
           {PERIOD_LABELS[p]}

@@ -14,7 +14,7 @@ export function Timeline({ process }: TimelineProps) {
 
   if (activities.length === 0) {
     return (
-      <div className="text-center py-10" style={{ color: 'rgba(255,255,255,0.4)', fontFamily: "'Roboto Condensed', sans-serif" }}>
+      <div className="text-center py-10" style={{ color: 'rgba(19,65,116,0.45)', fontFamily: "'Roboto Condensed', sans-serif" }}>
         No hay actividades registradas aún.
       </div>
     );
@@ -42,28 +42,28 @@ export function Timeline({ process }: TimelineProps) {
             <div
               className="rounded-xl p-4 border"
               style={{
-                background: 'rgba(0, 180, 166, 0.08)',
+                background: 'rgba(255, 255, 255, 0.97)',
                 backdropFilter: 'blur(16px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-                borderColor: idx === 0 ? 'rgba(212,175,55,0.3)' : 'rgba(0, 180, 166, 0.25)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+                borderColor: idx === 0 ? 'rgba(212,175,55,0.35)' : 'rgba(0, 135, 207, 0.25)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1)',
               }}
             >
               <div className="flex items-start justify-between gap-4 mb-2">
                 <div>
                   <h3
                     className="font-medium"
-                    style={{ fontFamily: "'Antonio', sans-serif", fontSize: 16, color: '#fff', lineHeight: 1.2 }}
+                    style={{ fontFamily: "'Antonio', sans-serif", fontSize: 16, color: '#134174', lineHeight: 1.2 }}
                   >
                     {activity.title}
                   </h3>
                   <span
                     className="inline-block mt-1 px-2 py-0.5 rounded text-xs"
                     style={{
-                      background: 'rgba(0,135,207,0.25)',
+                      background: 'rgba(0,135,207,0.10)',
                       color: '#0087CF',
                       fontFamily: "'Roboto Condensed', sans-serif",
-                      border: '1px solid rgba(0,135,207,0.3)',
+                      border: '1px solid rgba(0,135,207,0.22)',
                     }}
                   >
                     {subMap[activity.subactivityId] ?? activity.subactivityId}
@@ -81,7 +81,7 @@ export function Timeline({ process }: TimelineProps) {
 
               <p
                 className="text-sm mb-2"
-                style={{ color: 'rgba(255,255,255,0.7)', fontFamily: "'Roboto Condensed', sans-serif", lineHeight: 1.5 }}
+                style={{ color: 'rgba(19,65,116,0.75)', fontFamily: "'Roboto Condensed', sans-serif", lineHeight: 1.5 }}
               >
                 {activity.description}
               </p>
@@ -89,14 +89,14 @@ export function Timeline({ process }: TimelineProps) {
               {activity.message && (
                 <p
                   className="text-sm italic mb-3"
-                  style={{ color: 'rgba(212,175,55,0.8)', fontFamily: "'Roboto Condensed', sans-serif" }}
+                  style={{ color: 'rgba(212,175,55,0.85)', fontFamily: "'Roboto Condensed', sans-serif" }}
                 >
                   "{activity.message}"
                 </p>
               )}
 
               <div className="flex flex-wrap gap-3 text-xs mb-3">
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontFamily: "'Roboto Condensed', sans-serif" }}>
+                <span style={{ color: 'rgba(19,65,116,0.65)', fontFamily: "'Roboto Condensed', sans-serif" }}>
                   <strong style={{ color: '#D4AF37' }}>{activity.attendees}</strong> participantes
                 </span>
                 {activity.departments.slice(0, 3).map(d => (
@@ -104,10 +104,10 @@ export function Timeline({ process }: TimelineProps) {
                     key={d}
                     className="px-2 py-0.5 rounded"
                     style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      color: 'rgba(255,255,255,0.6)',
+                      background: 'rgba(19,65,116,0.06)',
+                      color: 'rgba(19,65,116,0.65)',
                       fontFamily: "'Roboto Condensed', sans-serif",
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(19,65,116,0.12)',
                     }}
                   >
                     {d}
@@ -136,12 +136,10 @@ export function Timeline({ process }: TimelineProps) {
                     <div
                       className="w-16 h-16 rounded-lg flex items-center justify-center border"
                       style={{
-                        background: 'rgba(0, 180, 166, 0.08)',
-                        backdropFilter: 'blur(16px) saturate(180%)',
-                        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-                        borderColor: 'rgba(0, 180, 166, 0.25)',
+                        background: 'rgba(19,65,116,0.07)',
+                        borderColor: 'rgba(19,65,116,0.15)',
                         fontFamily: "'Antonio', sans-serif",
-                        color: 'rgba(255,255,255,0.5)',
+                        color: 'rgba(19,65,116,0.55)',
                         fontSize: 13,
                       }}
                     >
