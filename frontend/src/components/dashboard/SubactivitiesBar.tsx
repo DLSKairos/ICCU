@@ -22,8 +22,11 @@ export function SubactivitiesBar({ subactivities }: SubactivitiesBarProps) {
     <div
       className="rounded-xl p-5 border flex flex-col gap-3"
       style={{
-        background: 'rgba(255,255,255,0.04)',
-        borderColor: 'rgba(255,255,255,0.1)',
+        background: 'rgba(0, 180, 166, 0.08)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        borderColor: 'rgba(0, 180, 166, 0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
       }}
     >
       <span

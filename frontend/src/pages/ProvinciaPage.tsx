@@ -9,7 +9,7 @@ import { SubactivitiesBar } from '../components/dashboard/SubactivitiesBar';
 import { SubactivityCard } from '../components/dashboard/SubactivityCard';
 import { Timeline } from '../components/dashboard/Timeline';
 import { IccuLogo } from '../components/ui/IccuLogo';
-import { getProcessById } from '../data/processes';
+import { getProcessById, PROCESSES } from '../data/processes';
 import { calcProcessMetrics } from '../utils/metrics';
 import type { Period } from '../utils/metrics';
 
@@ -31,6 +31,7 @@ export function ProvinciaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>('mensual');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const process = id ? getProcessById(id) : undefined;
 
@@ -54,151 +55,244 @@ export function ProvinciaPage() {
   const metrics = calcProcessMetrics(process, period, TODAY);
 
   return (
-    <div className="min-h-screen" style={{ background: '#134174' }}>
+    <div className="min-h-screen" style={{ background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174' }}>
       {/* Header fijo */}
       <header
         className="sticky top-0 z-40 border-b"
         style={{ background: 'rgba(19,65,116,0.95)', backdropFilter: 'blur(8px)', borderColor: 'rgba(212,175,55,0.2)' }}
       >
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
+        <div className="px-8 py-0 h-[76px] flex items-center gap-4">
           <button
             onClick={() => navigate('/mapa')}
-            className="flex items-center gap-2 text-sm cursor-pointer transition-colors duration-150 hover:text-[#D4AF37]"
-            style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none' }}
+            className="flex items-center gap-2 cursor-pointer font-semibold"
+            style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(255,255,255,0.85)', background: 'none', border: 'none', fontSize: 18 }}
           >
-            <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+            <svg width={24} height={24} viewBox="0 0 16 16" fill="none">
               <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Volver al mapa
           </button>
           <div className="flex-1" />
-          <IccuLogo height={60} />
+          <IccuLogo height={76} />
           <span
             className="shimmer-text hidden sm:block uppercase"
-            style={{ fontFamily: "'Antonio', sans-serif", fontSize: 17, letterSpacing: '0.1em', fontWeight: 700 }}
+            style={{ fontFamily: "'Antonio', sans-serif", fontSize: 28, letterSpacing: '0.1em', fontWeight: 700 }}
           >
             Talento Humano
           </span>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Nombre del proceso */}
-        <div className="mb-8">
-          <h1
-            style={{
-              fontFamily: "'Antonio', sans-serif",
-              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-              color: '#D4AF37',
-              lineHeight: 1,
-              marginBottom: '0.5rem',
-              letterSpacing: '0.03em',
-            }}
+      <div className="flex">
+        {/* Aside colapsable */}
+        <aside
+          className="shrink-0 border-r transition-[width] duration-300 ease-in-out"
+          style={{
+            width: sidebarOpen ? 220 : 36,
+            minHeight: 'calc(100vh - 77px)',
+            borderColor: 'rgba(212,175,55,0.15)',
+            background: 'rgba(19,65,116,0.7)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+        >
+          {/* Nav sticky: se queda visible mientras se hace scroll */}
+          <div
+            className="sticky overflow-hidden"
+            style={{ top: 77, height: 'calc(100vh - 77px)' }}
           >
-            {process.name}
-          </h1>
-          <p
-            className="max-w-2xl"
-            style={{
-              fontFamily: "'Roboto Condensed', sans-serif",
-              fontSize: 16,
-              color: 'rgba(255,255,255,0.65)',
-              lineHeight: 1.6,
-            }}
-          >
-            {process.description}
-          </p>
-        </div>
+            {/* Botón toggle */}
+            <div className="flex items-center justify-end" style={{ height: 40 }}>
+              <button
+                onClick={() => setSidebarOpen(prev => !prev)}
+                className="flex items-center justify-center cursor-pointer"
+                style={{
+                  width: 36,
+                  height: 40,
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.6)',
+                  flexShrink: 0,
+                }}
+                aria-label={sidebarOpen ? 'Colapsar menú' : 'Expandir menú'}
+              >
+                <svg
+                  width={16}
+                  height={16}
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  style={{
+                    transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+                    transition: 'transform 300ms ease-in-out',
+                  }}
+                >
+                  <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
 
-        {/* Selector de período */}
-        <div className="mb-8">
-          <PeriodSelector value={period} onChange={setPeriod} />
-        </div>
-
-        {/* Tarjetas de métricas */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <MetricCard
-            label="Avance del período"
-            value={`${metrics.percentage}%`}
-            subtitle={`${metrics.executed} de ${metrics.denominator} actividades`}
-            highlight
-          />
-          <MetricCard
-            label="Total anual ejecutado"
-            value={`${metrics.annualExecuted}`}
-            subtitle={`de ${metrics.annualTotal} planeadas`}
-          />
-          <MetricCard
-            label="Participantes"
-            value={`${metrics.attendeesInPeriod}`}
-            subtitle="en el período seleccionado"
-          />
-          <MetricCard
-            label="Subactividades"
-            value={`${process.subactivities.length}`}
-            subtitle="procesos activos"
-          />
-        </div>
-
-        {/* Gráficas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-          <ProgressPie
-            executed={metrics.executed}
-            denominator={metrics.denominator}
-            label={`Avance ${period}`}
-          />
-          <SubactivitiesBar subactivities={metrics.subactivities} />
-        </div>
-
-        {/* Histórico */}
-        <div className="mb-10">
-          <SectionTitle>Histórico de cumplimiento</SectionTitle>
-          <HistoricalBar
-            data={process.historicalPercentages}
-            currentYearPercentage={
-              calcProcessMetrics(process, 'anual', TODAY).percentage
-            }
-          />
-        </div>
-
-        {/* Subactividades */}
-        <div className="mb-10">
-          <SectionTitle>Subactividades</SectionTitle>
-          <div className="flex flex-col gap-3">
-            {metrics.subactivities.map(sub => (
-              <SubactivityCard
-                key={sub.subactivityId}
-                metrics={sub}
-                process={process}
-              />
-            ))}
+            {/* Lista de procesos */}
+            <nav className="overflow-y-auto py-2" style={{ height: 'calc(100% - 40px)' }}>
+              {PROCESSES.map(p => {
+                const isActive = p.id === id;
+                return (
+                  <div key={p.id} style={{ padding: '2px 8px' }}>
+                    <button
+                      onClick={() => navigate(`/provincia/${p.id}`)}
+                      className="w-full text-left cursor-pointer transition-all duration-200"
+                      style={{
+                        display: 'block',
+                        padding: '10px 14px',
+                        background: isActive ? 'rgba(212,175,55,0.15)' : 'transparent',
+                        backdropFilter: isActive ? 'blur(12px) saturate(160%)' : 'none',
+                        WebkitBackdropFilter: isActive ? 'blur(12px) saturate(160%)' : 'none',
+                        border: isActive
+                          ? '1px solid rgba(212,175,55,0.4)'
+                          : '1px solid transparent',
+                        borderRadius: 9999,
+                        boxShadow: isActive
+                          ? '0 2px 10px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.15)'
+                          : 'none',
+                        color: isActive ? '#D4AF37' : 'rgba(255,255,255,0.7)',
+                        fontFamily: "'Roboto Condensed', sans-serif",
+                        fontSize: 14,
+                        fontWeight: isActive ? 600 : 400,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={p.name}
+                    >
+                      {p.name}
+                    </button>
+                  </div>
+                );
+              })}
+            </nav>
           </div>
-        </div>
+        </aside>
 
-        {/* Línea de tiempo */}
-        <div className="mb-10">
-          <SectionTitle>Línea de tiempo</SectionTitle>
-          <Timeline process={process} />
-        </div>
+        {/* Contenido principal */}
+        <div className="flex-1 min-w-0">
+          <main className="max-w-6xl mx-auto px-6 py-10">
+            {/* Nombre del proceso */}
+            <div className="mb-8">
+              <h1
+                style={{
+                  fontFamily: "'Antonio', sans-serif",
+                  fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+                  color: '#D4AF37',
+                  lineHeight: 1,
+                  marginBottom: '0.5rem',
+                  letterSpacing: '0.03em',
+                }}
+              >
+                {process.name}
+              </h1>
+              <p
+                className="max-w-2xl"
+                style={{
+                  fontFamily: "'Roboto Condensed', sans-serif",
+                  fontSize: 16,
+                  color: 'rgba(255,255,255,0.65)',
+                  lineHeight: 1.6,
+                }}
+              >
+                {process.description}
+              </p>
+            </div>
 
-        {/* Galería */}
-        <div className="mb-10">
-          <SectionTitle>Galería fotográfica</SectionTitle>
-          <PhotoGallery process={process} />
-        </div>
-      </main>
+            {/* Selector de período */}
+            <div className="mb-8">
+              <PeriodSelector value={period} onChange={setPeriod} />
+            </div>
 
-      <footer
-        className="border-t flex items-center justify-end px-8 py-4"
-        style={{ borderColor: 'rgba(212,175,55,0.15)' }}
-      >
-        <img
-          src="/logos/logo_completo.png"
-          alt="ICCU"
-          style={{ height: 56, width: 'auto', objectFit: 'contain', opacity: 0.75 }}
-          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-        />
-      </footer>
+            {/* Tarjetas de métricas */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <MetricCard
+                label="Avance del período"
+                value={`${metrics.percentage}%`}
+                subtitle={`${metrics.executed} de ${metrics.denominator} actividades`}
+                highlight
+              />
+              <MetricCard
+                label="Total anual ejecutado"
+                value={`${metrics.annualExecuted}`}
+                subtitle={`de ${metrics.annualTotal} planeadas`}
+              />
+              <MetricCard
+                label="Participantes"
+                value={`${metrics.attendeesInPeriod}`}
+                subtitle="en el período seleccionado"
+              />
+              <MetricCard
+                label="Subactividades"
+                value={`${process.subactivities.length}`}
+                subtitle="procesos activos"
+              />
+            </div>
+
+            {/* Gráficas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+              <ProgressPie
+                executed={metrics.executed}
+                denominator={metrics.denominator}
+                label={`Avance ${period}`}
+              />
+              <SubactivitiesBar subactivities={metrics.subactivities} />
+            </div>
+
+            {/* Histórico */}
+            <div className="mb-10">
+              <SectionTitle>Histórico de cumplimiento</SectionTitle>
+              <HistoricalBar
+                data={process.historicalPercentages}
+                currentYearPercentage={
+                  calcProcessMetrics(process, 'anual', TODAY).percentage
+                }
+              />
+            </div>
+
+            {/* Subactividades */}
+            <div className="mb-10">
+              <SectionTitle>Subactividades</SectionTitle>
+              <div className="flex flex-col gap-3">
+                {metrics.subactivities.map(sub => (
+                  <SubactivityCard
+                    key={sub.subactivityId}
+                    metrics={sub}
+                    process={process}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Línea de tiempo */}
+            <div className="mb-10">
+              <SectionTitle>Línea de tiempo</SectionTitle>
+              <Timeline process={process} />
+            </div>
+
+            {/* Galería */}
+            <div className="mb-10">
+              <SectionTitle>Galería fotográfica</SectionTitle>
+              <PhotoGallery process={process} />
+            </div>
+          </main>
+
+          <footer
+            className="border-t flex items-center justify-end px-8"
+            style={{ height: 72, borderColor: 'rgba(212,175,55,0.15)' }}
+          >
+            <img
+              src="/logos/logo_completo.png"
+              alt="ICCU"
+              style={{ height: 72, width: 'auto', objectFit: 'contain', opacity: 0.75 }}
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+          </footer>
+        </div>
+      </div>
     </div>
   );
 }

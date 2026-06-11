@@ -42,8 +42,11 @@ export function Timeline({ process }: TimelineProps) {
             <div
               className="rounded-xl p-4 border"
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                borderColor: idx === 0 ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.08)',
+                background: 'rgba(0, 180, 166, 0.08)',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                borderColor: idx === 0 ? 'rgba(212,175,55,0.3)' : 'rgba(0, 180, 166, 0.25)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
               }}
             >
               <div className="flex items-start justify-between gap-4 mb-2">
@@ -133,8 +136,10 @@ export function Timeline({ process }: TimelineProps) {
                     <div
                       className="w-16 h-16 rounded-lg flex items-center justify-center border"
                       style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        borderColor: 'rgba(255,255,255,0.15)',
+                        background: 'rgba(0, 180, 166, 0.08)',
+                        backdropFilter: 'blur(16px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                        borderColor: 'rgba(0, 180, 166, 0.25)',
                         fontFamily: "'Antonio', sans-serif",
                         color: 'rgba(255,255,255,0.5)',
                         fontSize: 13,

@@ -19,8 +19,11 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
     <div
       className="rounded-xl border overflow-hidden transition-all duration-250"
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        borderColor: expanded ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.1)',
+        background: 'rgba(0, 180, 166, 0.08)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        borderColor: expanded ? 'rgba(212,175,55,0.4)' : 'rgba(0, 180, 166, 0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
       }}
     >
       {/* Header colapsado */}
