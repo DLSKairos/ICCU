@@ -55,7 +55,7 @@ export function ProgressPie({ executed, denominator, label = 'Avance del períod
               color: '#fff',
               fontSize: 13,
             }}
-            formatter={(value: number) => [value, '']}
+            formatter={(value) => [value as number, '']}
           />
           <Legend
             iconType="circle"

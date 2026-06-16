@@ -58,9 +58,9 @@ export function SubactivitiesBar({ subactivities }: SubactivitiesBarProps) {
               color: '#fff',
               fontSize: 13,
             }}
-            formatter={(value: number, name: string) => [
-              value,
-              name === 'ejecutado' ? 'Ejecutado' : 'Planeado',
+            formatter={(value, name) => [
+              value as number,
+              (name as string) === 'ejecutado' ? 'Ejecutado' : 'Planeado',
             ]}
           />
           <Bar dataKey="planeado" fill="rgba(0,135,207,0.35)" radius={[4, 4, 0, 0]} />

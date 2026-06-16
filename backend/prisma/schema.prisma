@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Process
+// Los 15 procesos de TH son hardcodeados (creados solo en el seed).
+// El ID es un slug legible porque se usa en URLs y en el mapeo del
+// frontend PROVINCE_TO_PROCESS.
+// ─────────────────────────────────────────────────────────────────
+model Process {
+  id          String @id // slug: "pausas-activas", "cumpleanos", etc.
+  provinceId  String @unique // slug del SVG: "bajo-magdalena", "ubate", etc.
+  name        String
+  description String
+
+  subactivities         Subactivity[]
+  activities            Activity[]
+  historicalPercentages HistoricalPercentage[]
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Subactivity
+// Cada proceso tiene N subactividades. El ID es también un slug
+// legible (ej: "pa-sesiones", "sst-cap") para facilitar el seed
+// y la legibilidad en logs y URLs.
+// ─────────────────────────────────────────────────────────────────
+model Subactivity {
+  id        String @id // slug: "pa-sesiones", "cum-celebraciones", etc.
+  processId String
+  name      String
+
+  process    Process    @relation(fields: [processId], references: [id])
+  targets    AnnualTarget[]
+  executions Execution[]
+  activities Activity[]
+  historicalPercentages HistoricalPercentageSubactivity[]
+
+  @@index([processId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AnnualTarget
+// Meta anual por subactividad por año. El admin la parametriza UNA
+// vez al año. Una vez guardada, isLocked=true y no se puede editar
+// hasta el reinicio anual (que la desbloquea para el nuevo año).
+// El unique (subactivityId, year) garantiza una sola meta por par.
+// ─────────────────────────────────────────────────────────────────
+model AnnualTarget {
+  id            String   @id @default(uuid())
+  subactivityId String
+  year          Int
+  target        Int
+  isLocked      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subactivity Subactivity @relation(fields: [subactivityId], references: [id])
+
+  @@unique([subactivityId, year])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Execution
+// Registro cuantitativo: cuántas veces se ejecutó una subactividad
+// en una fecha concreta. Separado de Activity porque Activity es
+// el registro narrativo (título, fotos, asistentes) y Execution es
+// el contador que alimenta el cálculo de avance vs meta.
+//
+// El campo year está desnormalizado (derivable de date) para
+// simplificar el reinicio anual: borrar WHERE year = X sin parsear
+// fechas. Esto es un trade-off deliberado rendimiento/claridad.
+// ─────────────────────────────────────────────────────────────────
+model Execution {
+  id            String   @id @default(uuid())
+  subactivityId String
+  year          Int
+  date          DateTime @db.Date
+  count         Int      @default(1)
+  createdAt     DateTime @default(now())
+
+  subactivity Subactivity @relation(fields: [subactivityId], references: [id])
+
+  @@index([subactivityId, year])
+  @@index([year])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Activity
+// Registro narrativo de una actividad realizada. Contiene la
+// información cualitativa: título, descripción, mensaje, asistentes,
+// departamentos participantes y fotos.
+//
+// Tiene doble FK: processId (para mostrar en el dashboard de
+// proceso) y subactivityId (para saber a qué subactividad pertenece).
+//
+// departments es String[] (array nativo de PostgreSQL) porque los
+// departamentos son valores libres que no requieren tabla propia.
+//
+// El campo year está desnormalizado por la misma razón que en
+// Execution: el reinicio anual borra WHERE year = X.
+// ─────────────────────────────────────────────────────────────────
+model Activity {
+  id            String   @id @default(uuid())
+  processId     String
+  subactivityId String
+  year          Int
+  title         String
+  description   String
+  message       String
+  date          DateTime @db.Date
+  attendees     Int      @default(0)
+  departments   String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  process     Process         @relation(fields: [processId], references: [id])
+  subactivity Subactivity     @relation(fields: [subactivityId], references: [id])
+  photos      ActivityPhoto[]
+
+  @@index([processId, year])
+  @@index([subactivityId])
+  @@index([year])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ActivityPhoto
+// Las fotos se almacenan en Cloudinary. En la BD solo guardamos:
+// - url: para mostrar la imagen
+// - cloudinaryId: para poder borrarla en Cloudinary durante el
+//   reinicio anual (llamada a Cloudinary API antes de borrar el row)
+//
+// onDelete: Cascade garantiza que al borrar una Activity sus fotos
+// se borran automáticamente en la BD. El borrado en Cloudinary lo
+// hace la capa de aplicación ANTES de borrar la Activity.
+// ─────────────────────────────────────────────────────────────────
+model ActivityPhoto {
+  id           String   @id @default(uuid())
+  activityId   String
+  url          String
+  cloudinaryId String
+  createdAt    DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HistoricalPercentage
+// Registro permanente del % de cumplimiento anual por PROCESO.
+// Se crea durante el reinicio anual ANTES de borrar los datos
+// operativos. Nunca se borra. El unique (processId, year) garantiza
+// que solo exista un registro histórico por proceso por año.
+// ─────────────────────────────────────────────────────────────────
+model HistoricalPercentage {
+  id         String   @id @default(uuid())
+  processId  String
+  year       Int
+  percentage Float
+  createdAt  DateTime @default(now())
+
+  process Process @relation(fields: [processId], references: [id])
+
+  @@unique([processId, year])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HistoricalPercentageSubactivity
+// Registro permanente del % de cumplimiento anual por SUBACTIVIDAD.
+// Granularidad más fina que HistoricalPercentage: permite ver qué
+// subactividades específicas fallaron o sobrepasaron su meta en
+// años anteriores, sin depender de los datos operativos borrados.
+// ─────────────────────────────────────────────────────────────────
+model HistoricalPercentageSubactivity {
+  id            String   @id @default(uuid())
+  subactivityId String
+  year          Int
+  percentage    Float
+  createdAt     DateTime @default(now())
+
+  subactivity Subactivity @relation(fields: [subactivityId], references: [id])
+
+  @@unique([subactivityId, year])
+}

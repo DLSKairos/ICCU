@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { HistoricalBar } from '../components/dashboard/HistoricalBar';
 import { MetricCard } from '../components/dashboard/MetricCard';
@@ -9,11 +9,12 @@ import { SubactivitiesBar } from '../components/dashboard/SubactivitiesBar';
 import { SubactivityCard } from '../components/dashboard/SubactivityCard';
 import { Timeline } from '../components/dashboard/Timeline';
 import { IccuLogo } from '../components/ui/IccuLogo';
-import { getProcessById, PROCESSES } from '../data/processes';
+import type { Process } from '../data/processes';
+import { processesApi } from '../services/api';
 import { calcProcessMetrics } from '../utils/metrics';
 import type { Period } from '../utils/metrics';
 
-const TODAY = new Date('2025-06-08');
+const TODAY = new Date();
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -27,19 +28,63 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen" style={{ background: '#134174' }}>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div
+            className="inline-block w-10 h-10 rounded-full border-4 border-t-transparent animate-spin mb-4"
+            style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }}
+          />
+          <p style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>
+            Cargando proceso...
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProvinciaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>('mensual');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const process = id ? getProcessById(id) : undefined;
+  const [process, setProcess] = useState<Process | null>(null);
+  const [allProcesses, setAllProcesses] = useState<Process[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!process) {
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      processesApi.getOne(id),
+      processesApi.getAll(),
+    ])
+      .then(([proc, all]) => {
+        setProcess(proc);
+        setAllProcesses(Array.isArray(all) ? all : []);
+      })
+      .catch(() => {
+        setError('No se pudo cargar el proceso. Verifica tu conexión.');
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <LoadingSkeleton />;
+
+  if (error || !process) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#134174' }}>
         <div className="text-center">
-          <p style={{ fontFamily: "'Antonio', sans-serif", fontSize: '2rem', color: '#D4AF37' }}>Proceso no encontrado</p>
+          <p style={{ fontFamily: "'Antonio', sans-serif", fontSize: '2rem', color: '#D4AF37' }}>
+            {error ?? 'Proceso no encontrado'}
+          </p>
           <button
             onClick={() => navigate('/mapa')}
             className="mt-4 px-6 py-2 rounded-lg cursor-pointer"
@@ -133,7 +178,7 @@ export function ProvinciaPage() {
 
             {/* Lista de procesos */}
             <nav className="overflow-y-auto py-2" style={{ height: 'calc(100% - 40px)' }}>
-              {PROCESSES.map(p => {
+              {allProcesses.map(p => {
                 const isActive = p.id === id;
                 return (
                   <div key={p.id} style={{ padding: '2px 8px' }}>

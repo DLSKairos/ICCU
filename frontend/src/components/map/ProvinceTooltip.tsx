@@ -13,7 +13,7 @@ const TOOLTIP_W = 560;
 const TOOLTIP_H = 72;
 const FONT_SIZE = 44;
 
-export function ProvinceTooltip({ name, x, y, visible, svgWidth, svgHeight }: ProvinceTooltipProps) {
+export function ProvinceTooltip({ name, x, y, visible, svgWidth }: ProvinceTooltipProps) {
   if (!visible) return null;
 
   const halfW = TOOLTIP_W / 2;

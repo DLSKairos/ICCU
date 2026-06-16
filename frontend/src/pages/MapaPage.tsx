@@ -1,7 +1,23 @@
+import { useEffect, useState } from 'react';
 import { IccuLogo } from '../components/ui/IccuLogo';
 import { CundinamarcaMap } from '../components/map/CundinamarcaMap';
+import type { Process } from '../data/processes';
+import { processesApi } from '../services/api';
 
 export function MapaPage() {
+  const [processes, setProcesses] = useState<Process[]>([]);
+
+  useEffect(() => {
+    processesApi.getAll()
+      .then((data) => {
+        setProcesses(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        // En caso de error, el mapa sigue funcionando sin nombres
+        setProcesses([]);
+      });
+  }, []);
+
   return (
     <div
       className="fixed inset-0 flex flex-col"
@@ -54,7 +70,7 @@ export function MapaPage() {
       {/* Mapa — ocupa todo el espacio disponible entre header y footer */}
       <main className="flex-1 flex items-stretch justify-center px-4 pb-2 min-h-0">
         <div className="w-full max-w-6xl">
-          <CundinamarcaMap />
+          <CundinamarcaMap processes={processes} />
         </div>
       </main>
 

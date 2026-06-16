@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PROVINCE_PATHS, SVG_VIEWBOX, SVG_TRANSFORM } from '../../data/cundinamarca-svg';
-import { PROCESSES, PROVINCE_TO_PROCESS } from '../../data/processes';
+import { PROVINCE_TO_PROCESS } from '../../data/processes';
+import type { Process } from '../../data/processes';
 import { useTwinkle } from '../../hooks/useTwinkle';
 import { Province } from './Province';
 import { ProvinceTooltip } from './ProvinceTooltip';
+
+interface CundinamarcaMapProps {
+  processes?: Process[];
+}
 
 const RENDER_PATHS = PROVINCE_PATHS
   .sort((a, b) => b.d.length - a.d.length);
@@ -18,7 +23,7 @@ function getZoneColor(labelY: number): string {
   return '#DC1419';                      // sur — rojo punzó
 }
 
-export function CundinamarcaMap() {
+export function CundinamarcaMap({ processes = [] }: CundinamarcaMapProps) {
   const navigate = useNavigate();
   const [appeared, setAppeared] = useState(false);
   const [twinkleEnabled, setTwinkleEnabled] = useState(false);
@@ -52,8 +57,9 @@ export function CundinamarcaMap() {
   const hoveredProvince = hoveredId
     ? PROVINCE_PATHS.find(p => p.id === hoveredId)
     : null;
+
   const hoveredProcessName = hoveredId
-    ? PROCESSES.find(p => p.id === PROVINCE_TO_PROCESS[hoveredId])?.name ?? ''
+    ? (processes.find(p => p.id === PROVINCE_TO_PROCESS[hoveredId])?.name ?? '')
     : '';
 
   return (
@@ -82,13 +88,13 @@ export function CundinamarcaMap() {
             color={getZoneColor(province.labelY)}
             onClick={() => handleProvinceClick(province.id)}
             onMouseEnter={() => {
-              resetPulsing();           // para todos los pulsos activos
-              onHoverStart(province.id); // ilumina solo esta
+              resetPulsing();
+              onHoverStart(province.id);
               setHoveredId(province.id);
             }}
             onMouseLeave={() => {
-              onHoverEnd(province.id);   // vuelve a idle en 150ms
-              setHoveredId(null);        // reactiva twinkle
+              onHoverEnd(province.id);
+              setHoveredId(null);
             }}
           />
         ))}
