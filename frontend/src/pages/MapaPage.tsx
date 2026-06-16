@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IccuLogo } from '../components/ui/IccuLogo';
 import { CundinamarcaMap } from '../components/map/CundinamarcaMap';
 import type { Process } from '../data/processes';
 import { processesApi } from '../services/api';
 
 export function MapaPage() {
+  const navigate = useNavigate();
   const [processes, setProcesses] = useState<Process[]>([]);
 
   useEffect(() => {
@@ -74,8 +76,36 @@ export function MapaPage() {
         </div>
       </main>
 
-      {/* Footer — solo logo */}
-      <footer className="flex items-center justify-end px-8 pb-4 shrink-0">
+      {/* Footer — botón admin izq | logo der */}
+      <footer className="flex items-center justify-between px-8 pb-4 shrink-0">
+        <button
+          onClick={() => navigate('/admin')}
+          title="Acceso administrador"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'rgba(255,255,255,0.20)',
+            padding: 6,
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: "'Roboto Condensed', sans-serif",
+            fontSize: 12,
+            letterSpacing: '0.05em',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(212,175,55,0.7)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.20)')}
+        >
+          <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+            <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+            <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          Admin
+        </button>
+
         <img
           src="/logos/logo_completo.png"
           alt="ICCU"

@@ -5,11 +5,11 @@ interface TimelineProps {
 }
 
 export function Timeline({ process }: TimelineProps) {
-  const activities: Activity[] = [...process.activities]
+  const activities: Activity[] = [...(process.activities ?? [])]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const subMap = Object.fromEntries(
-    process.subactivities.map(s => [s.id, s.name])
+    (process.subactivities ?? []).map(s => [s.id, s.name])
   );
 
   if (activities.length === 0) {
@@ -99,7 +99,7 @@ export function Timeline({ process }: TimelineProps) {
                 <span style={{ color: 'rgba(19,65,116,0.65)', fontFamily: "'Roboto Condensed', sans-serif" }}>
                   <strong style={{ color: '#D4AF37' }}>{activity.attendees}</strong> participantes
                 </span>
-                {activity.departments.slice(0, 3).map(d => (
+                {(activity.departments ?? []).slice(0, 3).map(d => (
                   <span
                     key={d}
                     className="px-2 py-0.5 rounded"
@@ -116,9 +116,9 @@ export function Timeline({ process }: TimelineProps) {
               </div>
 
               {/* Miniaturas de fotos */}
-              {activity.photos.length > 0 && (
+              {(activity.photos ?? []).length > 0 && (
                 <div className="flex gap-2 flex-wrap">
-                  {activity.photos.slice(0, 4).map((photo, i) => (
+                  {(activity.photos ?? []).slice(0, 4).map((photo, i) => (
                     <div
                       key={i}
                       className="w-16 h-16 rounded-lg overflow-hidden border"
@@ -132,7 +132,7 @@ export function Timeline({ process }: TimelineProps) {
                       />
                     </div>
                   ))}
-                  {activity.photos.length > 4 && (
+                  {(activity.photos ?? []).length > 4 && (
                     <div
                       className="w-16 h-16 rounded-lg flex items-center justify-center border"
                       style={{

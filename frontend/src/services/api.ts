@@ -21,7 +21,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('iccu_token');
       window.location.href = '/admin';
     }
@@ -39,9 +39,9 @@ export const processesApi = {
 
 export const adminApi = {
   getProcesses: (year = new Date().getFullYear()) =>
-    api.get(`/admin/processes?year=${year}`).then(r => r.data),
+    api.get(`/processes?year=${year}`).then(r => r.data),
   getProcess: (id: string, year = new Date().getFullYear()) =>
-    api.get(`/admin/processes/${id}?year=${year}`).then(r => r.data),
+    api.get(`/processes/${id}?year=${year}`).then(r => r.data),
   setTarget: (subactivityId: string, year: number, target: number) =>
     api.patch(`/activities/subactivity/${subactivityId}/targets/${year}`, { target }).then(r => r.data),
   lockTargets: (subactivityId: string, year: number) =>

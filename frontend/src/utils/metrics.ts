@@ -57,13 +57,13 @@ export function getExecutedInPeriod(
   today: Date = new Date()
 ): number {
   const start = getPeriodStart(period, today);
-  return subactivity.executions
+  return (subactivity.executions ?? [])
     .filter(e => new Date(e.date) >= start && new Date(e.date) <= today)
     .reduce((sum, e) => sum + e.count, 0);
 }
 
 export function getExecutedTotal(subactivity: Subactivity): number {
-  return subactivity.executions.reduce((sum, e) => sum + e.count, 0);
+  return (subactivity.executions ?? []).reduce((sum, e) => sum + e.count, 0);
 }
 
 export function calcPercentage(executed: number, denominator: number): number {
@@ -103,7 +103,7 @@ export function calcProcessMetrics(
 
   // Participantes en el período (suma de actividades dentro del período)
   const periodStart = getPeriodStart(period, today);
-  const attendeesInPeriod = process.activities
+  const attendeesInPeriod = (process.activities ?? [])
     .filter(a => new Date(a.date) >= periodStart && new Date(a.date) <= today)
     .reduce((sum, a) => sum + a.attendees, 0);
 

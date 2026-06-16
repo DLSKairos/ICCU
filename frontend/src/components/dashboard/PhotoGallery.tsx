@@ -14,7 +14,7 @@ interface PhotoItem {
 export function PhotoGallery({ process }: PhotoGalleryProps) {
   const [lightbox, setLightbox] = useState<PhotoItem | null>(null);
 
-  const photos: PhotoItem[] = process.activities.flatMap(a =>
+  const photos: PhotoItem[] = (process.activities ?? []).flatMap(a =>
     a.photos.map(url => ({
       url,
       activityTitle: a.title,

@@ -10,7 +10,7 @@ interface SubactivityCardProps {
 export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const recentActivities: Activity[] = process.activities
+  const recentActivities: Activity[] = (process.activities ?? [])
     .filter(a => a.subactivityId === metrics.subactivityId)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 3);
