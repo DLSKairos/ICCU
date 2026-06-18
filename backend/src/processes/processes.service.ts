@@ -15,6 +15,31 @@ type ProcessWithRelations = {
   historicalPercentages: Array<{ year: number; percentage: number }>;
 };
 
+type ProcessDetailWithRelations = {
+  id: string;
+  name: string;
+  description: string;
+  provinceId: string;
+  subactivities: Array<{
+    id: string;
+    name: string;
+    targets: Array<{ target: number; isLocked: boolean }>;
+    executions: Array<{ date: Date; count: number }>;
+  }>;
+  activities: Array<{
+    id: string;
+    subactivityId: string;
+    title: string;
+    description: string;
+    message: string;
+    date: Date;
+    attendees: number;
+    departments: string[];
+    photos: Array<{ url: string }>;
+  }>;
+  historicalPercentages: Array<{ year: number; percentage: number }>;
+};
+
 export interface ProcessSummary {
   id: string;
   name: string;
@@ -34,6 +59,30 @@ export interface SubactivitySummary {
   target: number;
   isLocked: boolean;
   progress: number;
+}
+
+export interface ProcessDetail {
+  id: string;
+  name: string;
+  description: string;
+  subactivities: {
+    id: string;
+    name: string;
+    annualTarget: number;
+    executions: { date: string; count: number }[];
+  }[];
+  activities: {
+    id: string;
+    subactivityId: string;
+    title: string;
+    description: string;
+    message: string;
+    date: string;
+    attendees: number;
+    departments: string[];
+    photos: string[];
+  }[];
+  historicalPercentages: { year: number; percentage: number }[];
 }
 
 @Injectable()
@@ -65,7 +114,7 @@ export class ProcessesService {
     );
   }
 
-  async findOne(id: string, year: number): Promise<ProcessSummary> {
+  async findOne(id: string, year: number): Promise<ProcessDetail> {
     const process = await this.prisma.process.findUnique({
       where: { id },
       include: {
@@ -74,8 +123,15 @@ export class ProcessesService {
             targets: { where: { year } },
             executions: {
               where: { year },
-              select: { count: true },
+              select: { date: true, count: true },
             },
+          },
+        },
+        activities: {
+          where: { year },
+          orderBy: { date: 'asc' },
+          include: {
+            photos: { select: { url: true } },
           },
         },
         historicalPercentages: {
@@ -89,10 +145,10 @@ export class ProcessesService {
       throw new NotFoundException(`Proceso '${id}' no encontrado`);
     }
 
-    return this.mapProcessSummary(process as ProcessWithRelations, year);
+    return this.mapProcessDetail(process as ProcessDetailWithRelations);
   }
 
-  async findByProvinceId(provinceId: string, year: number): Promise<ProcessSummary> {
+  async findByProvinceId(provinceId: string, year: number): Promise<ProcessDetail> {
     const process = await this.prisma.process.findUnique({
       where: { provinceId },
       include: {
@@ -101,8 +157,15 @@ export class ProcessesService {
             targets: { where: { year } },
             executions: {
               where: { year },
-              select: { count: true },
+              select: { date: true, count: true },
             },
+          },
+        },
+        activities: {
+          where: { year },
+          orderBy: { date: 'asc' },
+          include: {
+            photos: { select: { url: true } },
           },
         },
         historicalPercentages: {
@@ -116,7 +179,40 @@ export class ProcessesService {
       throw new NotFoundException(`No existe proceso para la provincia '${provinceId}'`);
     }
 
-    return this.mapProcessSummary(process as ProcessWithRelations, year);
+    return this.mapProcessDetail(process as ProcessDetailWithRelations);
+  }
+
+  private mapProcessDetail(process: ProcessDetailWithRelations): ProcessDetail {
+    return {
+      id: process.id,
+      name: process.name,
+      description: process.description,
+      subactivities: process.subactivities.map((s) => ({
+        id: s.id,
+        name: s.name,
+        annualTarget: s.targets[0]?.target ?? 0,
+        executions: s.executions.map((e) => ({
+          date: e.date instanceof Date
+            ? e.date.toISOString().split('T')[0]
+            : String(e.date).split('T')[0],
+          count: e.count,
+        })),
+      })),
+      activities: process.activities.map((a) => ({
+        id: a.id,
+        subactivityId: a.subactivityId,
+        title: a.title,
+        description: a.description,
+        message: a.message,
+        date: a.date instanceof Date
+          ? a.date.toISOString().split('T')[0]
+          : String(a.date).split('T')[0],
+        attendees: a.attendees,
+        departments: a.departments,
+        photos: a.photos.map((p) => p.url),
+      })),
+      historicalPercentages: process.historicalPercentages,
+    };
   }
 
   private mapProcessSummary(

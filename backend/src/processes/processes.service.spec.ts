@@ -171,7 +171,7 @@ describe('ProcessesService', () => {
   // ─── findOne ─────────────────────────────────────────────────────────────────
 
   describe('findOne(id, year)', () => {
-    it('should return a ProcessSummary with activities and historicalPercentages', async () => {
+    it('should return a ProcessDetail with subactivities and historicalPercentages', async () => {
       mockPrisma.process.findUnique.mockResolvedValue({
         id: 'pausas-activas',
         name: 'Pausas Activas',
@@ -181,18 +181,21 @@ describe('ProcessesService', () => {
           {
             id: 'pa-sesiones',
             name: 'Sesiones',
-            targets: [{ target: 100 }],
-            executions: [{ count: 60 }],
+            targets: [{ target: 100, isLocked: false }],
+            executions: [{ date: new Date('2025-06-01'), count: 60 }],
           },
         ],
+        activities: [],
         historicalPercentages: [{ year: 2023, percentage: 75 }],
       });
 
       const result = await service.findOne('pausas-activas', 2025);
 
       expect(result.id).toBe('pausas-activas');
-      expect(result.progress).toBe(60);
       expect(result.subactivities).toHaveLength(1);
+      expect(result.subactivities[0].annualTarget).toBe(100);
+      expect(result.subactivities[0].executions).toHaveLength(1);
+      expect(result.subactivities[0].executions[0].count).toBe(60);
       expect(result.historicalPercentages).toEqual([{ year: 2023, percentage: 75 }]);
     });
 
@@ -211,6 +214,7 @@ describe('ProcessesService', () => {
         description: 'Desc',
         provinceId: 'prov-x',
         subactivities: [],
+        activities: [],
         historicalPercentages: [],
       });
 
@@ -222,10 +226,10 @@ describe('ProcessesService', () => {
     });
   });
 
-  // ─── mapProcessSummary (indirectamente) ──────────────────────────────────────
+  // ─── mapProcessDetail (indirectamente) ───────────────────────────────────────
 
-  describe('metric calculation edge cases', () => {
-    it('should calculate individual subactivity progress correctly', async () => {
+  describe('ProcessDetail mapping edge cases', () => {
+    it('should map annualTarget from targets[0].target and preserve execution dates', async () => {
       mockPrisma.process.findUnique.mockResolvedValue({
         id: 'p1',
         name: 'P1',
@@ -235,16 +239,19 @@ describe('ProcessesService', () => {
           {
             id: 'sub1',
             name: 'Sub 1',
-            targets: [{ target: 200 }],
-            executions: [{ count: 50 }],
+            targets: [{ target: 200, isLocked: false }],
+            executions: [
+              { date: new Date('2025-03-15'), count: 50 },
+            ],
           },
           {
             id: 'sub2',
             name: 'Sub 2',
-            targets: [{ target: 100 }],
+            targets: [{ target: 100, isLocked: false }],
             executions: [],
           },
         ],
+        activities: [],
         historicalPercentages: [],
       });
 
@@ -253,12 +260,14 @@ describe('ProcessesService', () => {
       const sub1 = result.subactivities.find((s) => s.id === 'sub1')!;
       const sub2 = result.subactivities.find((s) => s.id === 'sub2')!;
 
-      expect(sub1.progress).toBe(25);
-      expect(sub2.progress).toBe(0);
-      expect(sub2.executed).toBe(0);
+      expect(sub1.annualTarget).toBe(200);
+      expect(sub1.executions[0].date).toBe('2025-03-15');
+      expect(sub1.executions[0].count).toBe(50);
+      expect(sub2.annualTarget).toBe(100);
+      expect(sub2.executions).toHaveLength(0);
     });
 
-    it('should aggregate totals across multiple subactivities', async () => {
+    it('should default annualTarget to 0 when subactivity has no targets', async () => {
       mockPrisma.process.findUnique.mockResolvedValue({
         id: 'p1',
         name: 'P1',
@@ -268,14 +277,37 @@ describe('ProcessesService', () => {
           {
             id: 'sub1',
             name: 'Sub 1',
-            targets: [{ target: 100 }],
-            executions: [{ count: 25 }],
+            targets: [],
+            executions: [],
           },
+        ],
+        activities: [],
+        historicalPercentages: [],
+      });
+
+      const result = await service.findOne('p1', 2025);
+
+      expect(result.subactivities[0].annualTarget).toBe(0);
+    });
+
+    it('should map activities with attendees and photos as URL strings', async () => {
+      mockPrisma.process.findUnique.mockResolvedValue({
+        id: 'p1',
+        name: 'P1',
+        description: 'Desc',
+        provinceId: 'prov1',
+        subactivities: [],
+        activities: [
           {
-            id: 'sub2',
-            name: 'Sub 2',
-            targets: [{ target: 56 }],
-            executions: [{ count: 14 }],
+            id: 'act1',
+            subactivityId: 'sub1',
+            title: 'Taller',
+            description: 'Desc taller',
+            message: 'Msg',
+            date: new Date('2025-05-20'),
+            attendees: 42,
+            departments: ['RRHH', 'TI'],
+            photos: [{ url: 'https://cdn.example.com/foto1.jpg' }],
           },
         ],
         historicalPercentages: [],
@@ -283,9 +315,10 @@ describe('ProcessesService', () => {
 
       const result = await service.findOne('p1', 2025);
 
-      expect(result.targetTotal).toBe(156);
-      expect(result.executedTotal).toBe(39);
-      expect(result.progress).toBe(25);
+      expect(result.activities).toHaveLength(1);
+      expect(result.activities[0].attendees).toBe(42);
+      expect(result.activities[0].date).toBe('2025-05-20');
+      expect(result.activities[0].photos).toEqual(['https://cdn.example.com/foto1.jpg']);
     });
   });
 });
