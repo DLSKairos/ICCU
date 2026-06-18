@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     const data = await authApi.login(username, password);
-    const accessToken = data.access_token;
+    const accessToken = data.accessToken;
     localStorage.setItem('iccu_token', accessToken);
     setToken(accessToken);
   };

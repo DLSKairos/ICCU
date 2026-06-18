@@ -17,6 +17,7 @@ import { ActivitiesService } from './activities.service.js';
 import { CreateActivityDto } from './dto/create-activity.dto.js';
 import { UpdateActivityDto } from './dto/update-activity.dto.js';
 import { CreateExecutionDto } from './dto/create-execution.dto.js';
+import { CreateSubactivityDto, CreateGlobalSubactivityDto } from './dto/create-subactivity.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 @Controller('activities')
@@ -114,5 +115,26 @@ export class ActivitiesController {
     @Param('year', ParseIntPipe) year: number,
   ) {
     return this.activitiesService.lockTarget(subactivityId, year);
+  }
+
+  // ─── Admin: crear subactividades dinámicamente ───────────────────────────────
+
+  @Post('subactivities')
+  @UseGuards(JwtAuthGuard)
+  createSubactivity(@Body() dto: CreateSubactivityDto) {
+    return this.activitiesService.createSubactivityWithTarget(dto.processId, dto.name, dto.year, dto.target);
+  }
+
+  @Post('subactivities/global')
+  @UseGuards(JwtAuthGuard)
+  createGlobalSubactivity(@Body() dto: CreateGlobalSubactivityDto) {
+    return this.activitiesService.createGlobalSubactivityWithTarget(dto.name, dto.year, dto.target);
+  }
+
+  @Delete('subactivities/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteSubactivity(@Param('id') id: string): Promise<void> {
+    return this.activitiesService.deleteSubactivity(id);
   }
 }

@@ -4,6 +4,8 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateActivityDto } from './dto/create-activity.dto.js';
 import { UpdateActivityDto } from './dto/update-activity.dto.js';
@@ -251,6 +253,57 @@ export class ActivitiesService {
     return this.prisma.annualTarget.update({
       where: { subactivityId_year: { subactivityId, year } },
       data: { isLocked: true },
+    });
+  }
+
+  // ─── Crear subactividades dinámicamente ─────────────────────────────────────
+
+  async createSubactivityWithTarget(
+    processId: string,
+    name: string,
+    year: number,
+    target: number,
+  ) {
+    const process = await this.prisma.process.findUnique({ where: { id: processId } });
+    if (!process) {
+      throw new NotFoundException(`Proceso '${processId}' no encontrado`);
+    }
+
+    const id = randomUUID();
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const sub = await tx.subactivity.create({ data: { id, processId, name } });
+      await tx.annualTarget.create({ data: { subactivityId: id, year, target, isLocked: false } });
+      return sub;
+    });
+  }
+
+  async createGlobalSubactivityWithTarget(name: string, year: number, target: number) {
+    const processes = await this.prisma.process.findMany({ select: { id: true } });
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      for (const proc of processes) {
+        const id = randomUUID();
+        await tx.subactivity.create({ data: { id, processId: proc.id, name } });
+        await tx.annualTarget.create({ data: { subactivityId: id, year, target, isLocked: false } });
+      }
+    });
+  }
+
+  async deleteSubactivity(id: string): Promise<void> {
+    const sub = await this.prisma.subactivity.findUnique({ where: { id } });
+    if (!sub) throw new NotFoundException(`Subactividad '${id}' no encontrada`);
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Borrar fotos de actividades asociadas
+      const activities = await tx.activity.findMany({ where: { subactivityId: id }, select: { id: true } });
+      for (const act of activities) {
+        await tx.activityPhoto.deleteMany({ where: { activityId: act.id } });
+      }
+      await tx.activity.deleteMany({ where: { subactivityId: id } });
+      await tx.execution.deleteMany({ where: { subactivityId: id } });
+      await tx.annualTarget.deleteMany({ where: { subactivityId: id } });
+      await tx.historicalPercentageSubactivity.deleteMany({ where: { subactivityId: id } });
+      await tx.subactivity.delete({ where: { id } });
     });
   }
 }

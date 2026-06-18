@@ -9,7 +9,7 @@ type ProcessWithRelations = {
   subactivities: Array<{
     id: string;
     name: string;
-    targets: Array<{ target: number }>;
+    targets: Array<{ target: number; isLocked: boolean }>;
     executions: Array<{ count: number }>;
   }>;
   historicalPercentages: Array<{ year: number; percentage: number }>;
@@ -32,6 +32,7 @@ export interface SubactivitySummary {
   name: string;
   executed: number;
   target: number;
+  isLocked: boolean;
   progress: number;
 }
 
@@ -122,12 +123,16 @@ export class ProcessesService {
     process: ProcessWithRelations,
     _year: number,
   ): ProcessSummary {
-    const subactivities: SubactivitySummary[] = process.subactivities.map((s) => {
-      const target = s.targets[0]?.target ?? 0;
-      const executed = s.executions.reduce((sum, e) => sum + e.count, 0);
-      const progress = target > 0 ? Math.round((executed / target) * 100) : 0;
-      return { id: s.id, name: s.name, executed, target, progress };
-    });
+    const subactivities: SubactivitySummary[] = process.subactivities
+      .filter((s) => s.targets.length > 0)
+      .map((s) => {
+        const tgt = s.targets[0];
+        const target = tgt.target;
+        const isLocked = tgt.isLocked;
+        const executed = s.executions.reduce((sum, e) => sum + e.count, 0);
+        const progress = target > 0 ? Math.round((executed / target) * 100) : 0;
+        return { id: s.id, name: s.name, executed, target, isLocked, progress };
+      });
 
     const executedTotal = subactivities.reduce((sum, s) => sum + s.executed, 0);
     const targetTotal = subactivities.reduce((sum, s) => sum + s.target, 0);

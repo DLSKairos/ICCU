@@ -2,24 +2,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const PROVINCE_TO_PROCESS: Record<string, string> = {
-  'bajo-magdalena':   'pausas-activas',
-  'ubate':            'cumpleanos',
-  'almeidas':         'lunes-miercoles',
-  'guavio':           'dia-salud',
-  'medina':           'sst',
-  'oriente':          'bienestar-laboral',
-  'rionegro':         'clima-organizacional',
-  'magdalena-centro': 'capacitacion',
-  'gualiva':          'seleccion',
-  'sabana-centro':    'evaluacion',
-  'sabana-occidente': 'seguridad-industrial',
-  'soacha':           'medicina-preventiva',
-  'tequendama':       'recreacion',
-  'alto-magdalena':   'apoyo-social',
-  'sumapaz':          'gestion-conocimiento',
-  'nueva-provincia':  'cultura-organizacional',
-};
 
 const PROCESSES = [
   { id: 'pausas-activas',       name: 'Pausas Activas',              provinceId: 'bajo-magdalena',   description: 'Espacios programados de descanso activo para promover la salud física y mental de los colaboradores durante la jornada laboral.' },
@@ -38,40 +20,6 @@ const PROCESSES = [
   { id: 'apoyo-social',         name: 'Apoyo Social',                 provinceId: 'alto-magdalena',   description: 'Programa de acompañamiento y apoyo a colaboradores que atraviesan situaciones de vulnerabilidad social, emocional o económica.' },
   { id: 'gestion-conocimiento', name: 'Gestión del Conocimiento',     provinceId: 'sumapaz',          description: 'Iniciativas para capturar, documentar y transferir el conocimiento institucional del ICCU.' },
   { id: 'cultura-organizacional', name: 'Cultura Organizacional',     provinceId: 'nueva-provincia',  description: 'Fortalecimiento de la identidad institucional y los valores corporativos del ICCU.' },
-];
-
-const SUBACTIVITIES: Array<{ id: string; processId: string; name: string; target2025: number }> = [
-  { id: 'pa-sesiones',         processId: 'pausas-activas',       name: 'Sesiones de Pausa Activa',         target2025: 156 },
-  { id: 'cum-celebraciones',   processId: 'cumpleanos',           name: 'Celebraciones Mensuales',           target2025: 12  },
-  { id: 'lm-sesiones',         processId: 'lunes-miercoles',      name: 'Sesiones Lunes/Miércoles',          target2025: 96  },
-  { id: 'ds-jornada',          processId: 'dia-salud',            name: 'Jornada de Salud',                  target2025: 2   },
-  { id: 'ds-taller',           processId: 'dia-salud',            name: 'Talleres Preventivos',              target2025: 4   },
-  { id: 'sst-cap',             processId: 'sst',                  name: 'Capacitaciones SST',                target2025: 24  },
-  { id: 'sst-insp',            processId: 'sst',                  name: 'Inspecciones de Seguridad',         target2025: 12  },
-  { id: 'sst-sim',             processId: 'sst',                  name: 'Simulacros de Emergencia',          target2025: 2   },
-  { id: 'bl-integra',          processId: 'bienestar-laboral',    name: 'Jornadas de Integración',           target2025: 4   },
-  { id: 'bl-recrea',           processId: 'bienestar-laboral',    name: 'Actividades Recreativas',           target2025: 6   },
-  { id: 'co-encuesta',         processId: 'clima-organizacional', name: 'Encuestas de Clima',                target2025: 2   },
-  { id: 'co-taller',           processId: 'clima-organizacional', name: 'Talleres de Mejora',                target2025: 4   },
-  { id: 'cap-tecnica',         processId: 'capacitacion',         name: 'Capacitaciones Técnicas',           target2025: 18  },
-  { id: 'cap-trans',           processId: 'capacitacion',         name: 'Formación Transversal',             target2025: 8   },
-  { id: 'cap-virt',            processId: 'capacitacion',         name: 'Cursos Virtuales',                  target2025: 30  },
-  { id: 'sel-conv',            processId: 'seleccion',            name: 'Convocatorias',                     target2025: 6   },
-  { id: 'sel-ind',             processId: 'seleccion',            name: 'Inducciones',                       target2025: 12  },
-  { id: 'ev-eval',             processId: 'evaluacion',           name: 'Evaluaciones Anuales',              target2025: 2   },
-  { id: 'ev-retro',            processId: 'evaluacion',           name: 'Sesiones de Retroalimentación',    target2025: 12  },
-  { id: 'si-insp',             processId: 'seguridad-industrial', name: 'Inspecciones de Obra',              target2025: 24  },
-  { id: 'si-epp',              processId: 'seguridad-industrial', name: 'Entrega de EPP',                    target2025: 4   },
-  { id: 'mp-examen',           processId: 'medicina-preventiva',  name: 'Exámenes Ocupacionales',            target2025: 140 },
-  { id: 'mp-vigi',             processId: 'medicina-preventiva',  name: 'Seguimiento Epidemiológico',        target2025: 4   },
-  { id: 'rec-dep',             processId: 'recreacion',           name: 'Actividades Deportivas',            target2025: 8   },
-  { id: 'rec-cult',            processId: 'recreacion',           name: 'Actividades Culturales',            target2025: 4   },
-  { id: 'as-aten',             processId: 'apoyo-social',         name: 'Atenciones Individuales',           target2025: 60  },
-  { id: 'as-grupo',            processId: 'apoyo-social',         name: 'Talleres Grupales',                 target2025: 6   },
-  { id: 'gc-doc',              processId: 'gestion-conocimiento', name: 'Documentación de Procesos',         target2025: 10  },
-  { id: 'gc-trans',            processId: 'gestion-conocimiento', name: 'Transferencia de Conocimiento',     target2025: 6   },
-  { id: 'co2-iden',            processId: 'cultura-organizacional', name: 'Talleres de Identidad',           target2025: 4   },
-  { id: 'co2-val',             processId: 'cultura-organizacional', name: 'Vivencia de Valores',             target2025: 6   },
 ];
 
 const HISTORICAL: Array<{ processId: string; year: number; percentage: number }> = [
@@ -96,11 +44,15 @@ const HISTORICAL: Array<{ processId: string; year: number; percentage: number }>
 async function main() {
   console.log('Iniciando seed ICCU...');
 
-  // Limpiar datos con UUID primero (idempotente)
+  // Limpiar datos preservando solo los Procesos (idempotente para fresh install)
   await prisma.$transaction([
+    prisma.activityPhoto.deleteMany(),
+    prisma.activity.deleteMany(),
+    prisma.execution.deleteMany(),
     prisma.historicalPercentageSubactivity.deleteMany(),
-    prisma.historicalPercentage.deleteMany(),
     prisma.annualTarget.deleteMany(),
+    prisma.subactivity.deleteMany(),
+    prisma.historicalPercentage.deleteMany(),
   ]);
 
   // Upsert procesos
@@ -112,26 +64,6 @@ async function main() {
     });
   }
   console.log(`OK: ${PROCESSES.length} procesos`);
-
-  // Upsert subactividades
-  for (const s of SUBACTIVITIES) {
-    await prisma.subactivity.upsert({
-      where: { id: s.id },
-      update: { name: s.name, processId: s.processId },
-      create: { id: s.id, processId: s.processId, name: s.name },
-    });
-  }
-  console.log(`OK: ${SUBACTIVITIES.length} subactividades`);
-
-  // Crear AnnualTargets 2025 (uno por subactividad)
-  for (const s of SUBACTIVITIES) {
-    await prisma.annualTarget.upsert({
-      where: { subactivityId_year: { subactivityId: s.id, year: 2025 } },
-      update: { target: s.target2025 },
-      create: { subactivityId: s.id, year: 2025, target: s.target2025, isLocked: false },
-    });
-  }
-  console.log(`OK: ${SUBACTIVITIES.length} metas 2025`);
 
   // Crear históricos 2023 y 2024
   for (const h of HISTORICAL) {

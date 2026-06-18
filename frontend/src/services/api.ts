@@ -45,7 +45,13 @@ export const adminApi = {
   setTarget: (subactivityId: string, year: number, target: number) =>
     api.patch(`/activities/subactivity/${subactivityId}/targets/${year}`, { target }).then(r => r.data),
   lockTargets: (subactivityId: string, year: number) =>
-    api.post(`/activities/subactivity/${subactivityId}/targets/${year}/lock`).then(r => r.data),
+    api.patch(`/activities/subactivity/${subactivityId}/targets/${year}/lock`).then(r => r.data),
+  createSubactivity: (processId: string, name: string, year: number, target: number) =>
+    api.post('/activities/subactivities', { processId, name, year, target }).then(r => r.data),
+  createGlobalActivity: (name: string, year: number, target: number) =>
+    api.post('/activities/subactivities/global', { name, year, target }).then(r => r.data),
+  deleteSubactivity: (id: string) =>
+    api.delete(`/activities/subactivities/${id}`),
   createActivity: (formData: FormData) =>
     api.post('/activities', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
   deleteActivity: (id: string) =>

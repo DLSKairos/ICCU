@@ -4,6 +4,7 @@ import {
   IsInt,
   IsPositive,
   IsArray,
+  IsOptional,
   IsDateString,
   Min,
   MaxLength,
@@ -43,8 +44,9 @@ export class CreateActivityDto {
   @Type(() => Number)
   attendees: number;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @ArrayMaxSize(50)
-  departments: string[];
+  departments?: string[];
 }
