@@ -762,6 +762,11 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 style={{ ...inputStyle, colorScheme: 'dark' }}
                 className="outline-none"
               />
+              {requestDate && (
+                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: '#D4AF37', marginTop: 5, display: 'block', letterSpacing: '0.06em' }}>
+                  {new Date(requestDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+                </span>
+              )}
             </div>
 
             {/* Fecha inicio de permiso */}
@@ -775,6 +780,11 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 style={{ ...inputStyle, colorScheme: 'dark' }}
                 className="outline-none"
               />
+              {startDate && (
+                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: '#D4AF37', marginTop: 5, display: 'block', letterSpacing: '0.06em' }}>
+                  {new Date(startDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+                </span>
+              )}
             </div>
 
             {/* Fecha fin de permiso */}
@@ -788,6 +798,11 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 style={{ ...inputStyle, colorScheme: 'dark' }}
                 className="outline-none"
               />
+              {endDate && (
+                <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: '#D4AF37', marginTop: 5, display: 'block', letterSpacing: '0.06em' }}>
+                  {new Date(endDate + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+                </span>
+              )}
             </div>
 
             {/* Días (calculado) */}

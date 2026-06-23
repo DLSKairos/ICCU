@@ -9,6 +9,7 @@ interface AdminProcess {
   id: string;
   name: string;
   description?: string;
+  type?: string;
   isParametrized?: boolean;
   percentage?: number;
   subactivities?: Array<{ isLocked?: boolean }>;
@@ -110,9 +111,10 @@ interface ProcessCardProps {
   proc: AdminProcess;
   year: number;
   onManage: (id: string) => void;
+  isAbsence?: boolean;
 }
 
-function ProcessCard({ proc, year, onManage }: ProcessCardProps) {
+function ProcessCard({ proc, year, onManage, isAbsence = false }: ProcessCardProps) {
   const parametrized = getParametrizationStatus(proc);
   const pct = getPercentage(proc);
 
@@ -127,16 +129,16 @@ function ProcessCard({ proc, year, onManage }: ProcessCardProps) {
     <div
       className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200"
       style={{
-        background: 'rgba(255,255,255,0.04)',
-        borderColor: 'rgba(212,175,55,0.12)',
+        background: isAbsence ? 'rgba(212,175,55,0.05)' : 'rgba(255,255,255,0.04)',
+        borderColor: isAbsence ? 'rgba(212,175,55,0.28)' : 'rgba(212,175,55,0.12)',
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,175,55,0.28)';
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.06)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,175,55,0.45)';
+        (e.currentTarget as HTMLDivElement).style.background = isAbsence ? 'rgba(212,175,55,0.09)' : 'rgba(255,255,255,0.06)';
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,175,55,0.12)';
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = isAbsence ? 'rgba(212,175,55,0.28)' : 'rgba(212,175,55,0.12)';
+        (e.currentTarget as HTMLDivElement).style.background = isAbsence ? 'rgba(212,175,55,0.05)' : 'rgba(255,255,255,0.04)';
       }}
     >
       {/* Header: nombre + badge */}
@@ -153,100 +155,104 @@ function ProcessCard({ proc, year, onManage }: ProcessCardProps) {
         >
           {proc.name}
         </h2>
-        <span
-          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs"
-          style={{
-            background: parametrized ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)',
-            border: `1px solid ${parametrized ? 'rgba(74,222,128,0.3)' : 'rgba(251,191,36,0.3)'}`,
-            color: parametrized ? '#4ade80' : '#fbbf24',
-            fontFamily: "'Roboto Condensed', sans-serif",
-            fontSize: 11,
-            letterSpacing: '0.04em',
-          }}
-        >
-          {parametrized ? (
-            <>
-              <svg width={10} height={10} viewBox="0 0 24 24" fill="none">
-                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Parametrizado
-            </>
-          ) : (
-            <>
-              <svg width={10} height={10} viewBox="0 0 24 24" fill="none">
-                <circle cx={12} cy={12} r={10} stroke="currentColor" strokeWidth={2} />
-                <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-              </svg>
-              Sin metas
-            </>
-          )}
-        </span>
-      </div>
-
-      {/* Barra de progreso */}
-      <div>
-        <div className="flex justify-between items-baseline mb-2">
+        {!isAbsence && (
           <span
+            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs"
             style={{
+              background: parametrized ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)',
+              border: `1px solid ${parametrized ? 'rgba(74,222,128,0.3)' : 'rgba(251,191,36,0.3)'}`,
+              color: parametrized ? '#4ade80' : '#fbbf24',
               fontFamily: "'Roboto Condensed', sans-serif",
               fontSize: 11,
-              color: 'rgba(255,255,255,0.4)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              letterSpacing: '0.04em',
             }}
           >
-            Avance {year}
+            {parametrized ? (
+              <>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Parametrizado
+              </>
+            ) : (
+              <>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+                  <circle cx={12} cy={12} r={10} stroke="currentColor" strokeWidth={2} />
+                  <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                </svg>
+                Sin metas
+              </>
+            )}
           </span>
-          <span
-            style={{
-              fontFamily: "'Antonio', sans-serif",
-              fontSize: '1.35rem',
-              color: '#D4AF37',
-              lineHeight: 1,
-            }}
-          >
-            {pct}%
-          </span>
-        </div>
-        <div
-          className="w-full rounded-full overflow-hidden"
-          style={{ height: 6, background: 'rgba(255,255,255,0.08)' }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${Math.min(100, Math.max(0, pct))}%`,
-              background: barColor,
-            }}
-          />
-        </div>
+        )}
       </div>
 
-      {/* Botón gestionar */}
+      {/* Barra de progreso — solo para procesos normales */}
+      {!isAbsence && (
+        <div>
+          <div className="flex justify-between items-baseline mb-2">
+            <span
+              style={{
+                fontFamily: "'Roboto Condensed', sans-serif",
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.4)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Avance {year}
+            </span>
+            <span
+              style={{
+                fontFamily: "'Antonio', sans-serif",
+                fontSize: '1.35rem',
+                color: '#D4AF37',
+                lineHeight: 1,
+              }}
+            >
+              {pct}%
+            </span>
+          </div>
+          <div
+            className="w-full rounded-full overflow-hidden"
+            style={{ height: 6, background: 'rgba(255,255,255,0.08)' }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${Math.min(100, Math.max(0, pct))}%`,
+                background: barColor,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Botón */}
       <button
         onClick={() => onManage(proc.id)}
         className="w-full rounded-lg cursor-pointer transition-all flex items-center justify-center gap-2"
         style={{
           height: 44,
-          background: 'rgba(0,135,207,0.14)',
-          border: '1px solid rgba(0,135,207,0.32)',
-          color: '#6dcff6',
+          background: isAbsence ? 'rgba(212,175,55,0.14)' : 'rgba(0,135,207,0.14)',
+          border: `1px solid ${isAbsence ? 'rgba(212,175,55,0.40)' : 'rgba(0,135,207,0.32)'}`,
+          color: isAbsence ? '#D4AF37' : '#6dcff6',
           fontFamily: "'Roboto Condensed', sans-serif",
           fontSize: 14,
           letterSpacing: '0.04em',
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.background = '#0087CF';
-          e.currentTarget.style.color = '#fff';
-          e.currentTarget.style.borderColor = '#0087CF';
+          e.currentTarget.style.background = isAbsence ? '#D4AF37' : '#0087CF';
+          e.currentTarget.style.color = isAbsence ? '#0e2d4f' : '#fff';
+          e.currentTarget.style.borderColor = isAbsence ? '#D4AF37' : '#0087CF';
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.background = 'rgba(0,135,207,0.14)';
-          e.currentTarget.style.color = '#6dcff6';
-          e.currentTarget.style.borderColor = 'rgba(0,135,207,0.32)';
+          e.currentTarget.style.background = isAbsence ? 'rgba(212,175,55,0.14)' : 'rgba(0,135,207,0.14)';
+          e.currentTarget.style.color = isAbsence ? '#D4AF37' : '#6dcff6';
+          e.currentTarget.style.borderColor = isAbsence ? 'rgba(212,175,55,0.40)' : 'rgba(0,135,207,0.32)';
         }}
       >
-        Gestionar proceso
+        {isAbsence ? 'Registrar ausentismo' : 'Gestionar proceso'}
         <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
           <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -290,10 +296,14 @@ export default function AdminDashboardPage() {
     navigate('/admin', { replace: true });
   };
 
-  // Métricas resumen
-  const totalParametrized = processes.filter(getParametrizationStatus).length;
-  const avgPct = processes.length
-    ? Math.round(processes.reduce((s, p) => s + getPercentage(p), 0) / processes.length)
+  // Separar ausentismo de los procesos estándar
+  const absenceProcess = processes.find(p => p.type === 'AUSENTISMO') ?? null;
+  const standardProcesses = processes.filter(p => p.type !== 'AUSENTISMO');
+
+  // Métricas resumen — solo procesos estándar
+  const totalParametrized = standardProcesses.filter(getParametrizationStatus).length;
+  const avgPct = standardProcesses.length
+    ? Math.round(standardProcesses.reduce((s, p) => s + getPercentage(p), 0) / standardProcesses.length)
     : 0;
 
   return (
@@ -408,20 +418,46 @@ export default function AdminDashboardPage() {
         {/* Contenido cargado */}
         {!loading && !error && (
           <>
-            {/* Tarjetas resumen */}
+            {/* Tarjetas resumen — excluyen ausentismo */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              <SummaryCard label="Total procesos" value={processes.length} />
+              <SummaryCard label="Total procesos" value={standardProcesses.length} />
               <SummaryCard label="Parametrizados" value={totalParametrized} />
               <SummaryCard
                 label="Sin parametrizar"
-                value={processes.length - totalParametrized}
+                value={standardProcesses.length - totalParametrized}
               />
               <SummaryCard
                 label="Avance promedio"
-                value={processes.length ? `${avgPct}%` : '—'}
+                value={standardProcesses.length ? `${avgPct}%` : '—'}
                 accent
               />
             </div>
+
+            {/* Ausentismo — destacado arriba */}
+            {absenceProcess && (
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <h2
+                    style={{
+                      fontFamily: "'Antonio', sans-serif",
+                      fontSize: '1.15rem',
+                      color: 'rgba(255,255,255,0.7)',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Control de Ausentismo
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <ProcessCard
+                    proc={absenceProcess}
+                    year={year}
+                    onManage={id => navigate(`/admin/provincia/${id}`)}
+                    isAbsence
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Título de sección */}
             <div className="flex items-center gap-3 mb-5">
@@ -444,12 +480,12 @@ export default function AdminDashboardPage() {
                   fontFamily: "'Roboto Condensed', sans-serif",
                 }}
               >
-                {processes.length}
+                {standardProcesses.length}
               </span>
             </div>
 
-            {/* Grid de procesos */}
-            {processes.length === 0 ? (
+            {/* Grid de procesos estándar */}
+            {standardProcesses.length === 0 ? (
               <div
                 className="rounded-2xl border py-20 text-center"
                 style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}
@@ -475,7 +511,7 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {processes.map(proc => (
+                {standardProcesses.map(proc => (
                   <ProcessCard
                     key={proc.id}
                     proc={proc}
