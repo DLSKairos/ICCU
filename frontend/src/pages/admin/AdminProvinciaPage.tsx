@@ -1048,7 +1048,11 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     <th
                       key={col}
                       style={{
-                        ...labelStyle,
+                        fontFamily: "'Roboto Condensed', sans-serif",
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.50)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.07em',
                         textAlign: 'left',
                         padding: '6px 12px',
                         whiteSpace: 'nowrap',
@@ -1069,9 +1073,9 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     {[
                       abs.identification,
                       abs.employeeName,
-                      new Date(abs.requestDate + 'T00:00:00').toLocaleDateString('es-CO'),
-                      new Date(abs.startDate + 'T00:00:00').toLocaleDateString('es-CO'),
-                      new Date(abs.endDate + 'T00:00:00').toLocaleDateString('es-CO'),
+                      abs.requestDate?.substring(0, 10).split('-').reverse().join('/') ?? '—',
+                      abs.startDate?.substring(0, 10).split('-').reverse().join('/') ?? '—',
+                      abs.endDate?.substring(0, 10).split('-').reverse().join('/') ?? '—',
                       String(abs.days),
                       abs.department,
                       abs.incapacityType,
