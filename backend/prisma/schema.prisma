@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProcessType {
+  STANDARD
+  AUSENTISMO
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Process
 // Los 15 procesos de TH son hardcodeados (creados solo en el seed).
@@ -14,14 +19,16 @@ datasource db {
 // frontend PROVINCE_TO_PROCESS.
 // ─────────────────────────────────────────────────────────────────
 model Process {
-  id          String @id // slug: "pausas-activas", "cumpleanos", etc.
-  provinceId  String @unique // slug del SVG: "bajo-magdalena", "ubate", etc.
+  id          String      @id // slug: "pausas-activas", "cumpleanos", etc.
+  provinceId  String      @unique // slug del SVG: "bajo-magdalena", "ubate", etc.
   name        String
   description String
+  type        ProcessType @default(STANDARD)
 
   subactivities         Subactivity[]
   activities            Activity[]
   historicalPercentages HistoricalPercentage[]
+  absenceRecords        AbsenceRecord[]
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -187,4 +194,34 @@ model HistoricalPercentageSubactivity {
   subactivity Subactivity @relation(fields: [subactivityId], references: [id])
 
   @@unique([subactivityId, year])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AbsenceRecord
+// Registros de ausentismo del proceso con type = AUSENTISMO.
+// Los días se calculan en el backend (endDate - startDate + 1,
+// ambos días inclusive). El año se desnormaliza de startDate para
+// facilitar consultas por año (igual que en Execution).
+// ─────────────────────────────────────────────────────────────────
+model AbsenceRecord {
+  id                String   @id @default(uuid())
+  processId         String
+  identification    String
+  employeeName      String
+  requestDate       DateTime @db.Date
+  startDate         DateTime @db.Date
+  endDate           DateTime @db.Date
+  days              Int
+  leaveReason       String
+  incapacityType    String
+  department        String
+  diagnosticCode    String?
+  diagnosticConcept String?
+  year              Int
+  createdAt         DateTime @default(now())
+
+  process Process @relation(fields: [processId], references: [id])
+
+  @@index([processId, year])
+  @@index([year])
 }

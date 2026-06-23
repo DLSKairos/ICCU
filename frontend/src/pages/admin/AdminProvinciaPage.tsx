@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { IccuLogo } from '../../components/ui/IccuLogo';
 import { LoadingSpinner } from '../../components/admin/LoadingSpinner';
 import { ErrorMessage } from '../../components/admin/ErrorMessage';
-import { adminApi } from '../../services/api';
+import { adminApi, absenceApi } from '../../services/api';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -32,9 +32,31 @@ interface AdminProcess {
   name: string;
   description?: string;
   progress?: number;
+  type?: string;
   subactivities: AdminSubactivity[];
   activities: AdminActivity[];
   [key: string]: unknown;
+}
+
+interface AbsenceRecord {
+  id: string;
+  identification: string;
+  employeeName: string;
+  requestDate: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  leaveReason: string;
+  incapacityType: string;
+  department: string;
+  diagnosticCode?: string;
+  diagnosticConcept?: string;
+  year: number;
+}
+
+interface Cie10Option {
+  code: string;
+  title: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -455,6 +477,580 @@ function ResetModal({ onClose }: ResetModalProps) {
         )}
       </div>
     </div>
+  );
+}
+
+// ── Panel de Ausentismo ───────────────────────────────────────────────────────
+
+const LEAVE_REASONS = [
+  'Común',
+  'Accidente de tránsito',
+  'Licencia paternidad y/o maternidad',
+  'Accidente de trabajo',
+];
+
+function AusentismoPanel({ processId, year }: { processId: string; year: number }) {
+  const [absences, setAbsences] = useState<AbsenceRecord[]>([]);
+  const [loadingAbsences, setLoadingAbsences] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Campos del formulario
+  const [identification, setIdentification] = useState('');
+  const [employeeName, setEmployeeName] = useState('');
+  const [requestDate, setRequestDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [days, setDays] = useState(0);
+  const [leaveReason, setLeaveReason] = useState('');
+  const [incapacityType, setIncapacityType] = useState('');
+  const [department, setDepartment] = useState('');
+  const [diagnosticCode, setDiagnosticCode] = useState('');
+  const [diagnosticConcept, setDiagnosticConcept] = useState('');
+  const [cie10Query, setCie10Query] = useState('');
+  const [cie10Results, setCie10Results] = useState<Cie10Option[]>([]);
+  const [cie10Loading, setCie10Loading] = useState(false);
+  const [showCie10Dropdown, setShowCie10Dropdown] = useState(false);
+  const cie10Ref = useRef<HTMLDivElement>(null);
+
+  // Cargar ausencias al montar
+  const loadAbsences = () => {
+    setLoadingAbsences(true);
+    adminApi
+      .getAbsenceRecords(processId, year)
+      .then(data => setAbsences(Array.isArray(data) ? data : []))
+      .catch(() => setAbsences([]))
+      .finally(() => setLoadingAbsences(false));
+  };
+
+  useEffect(() => {
+    loadAbsences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [processId, year]);
+
+  // Calcular días automáticamente
+  useEffect(() => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diff = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      setDays(diff > 0 ? diff : 0);
+    } else {
+      setDays(0);
+    }
+  }, [startDate, endDate]);
+
+  // Búsqueda CIE-10 con debounce
+  useEffect(() => {
+    if (cie10Query.length < 3) { setCie10Results([]); setShowCie10Dropdown(false); return; }
+    const timer = setTimeout(async () => {
+      setCie10Loading(true);
+      try {
+        const results = await absenceApi.searchCie10(cie10Query);
+        setCie10Results(Array.isArray(results) ? results : []);
+        setShowCie10Dropdown(true);
+      } catch {
+        setCie10Results([]);
+      } finally {
+        setCie10Loading(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [cie10Query]);
+
+  // Cerrar dropdown CIE-10 al clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cie10Ref.current && !cie10Ref.current.contains(e.target as Node)) {
+        setShowCie10Dropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectCie10 = (option: Cie10Option) => {
+    setDiagnosticCode(option.code);
+    setDiagnosticConcept(option.title);
+    setCie10Query('');
+    setCie10Results([]);
+    setShowCie10Dropdown(false);
+  };
+
+  const handleClearCie10 = () => {
+    setDiagnosticCode('');
+    setDiagnosticConcept('');
+    setCie10Query('');
+    setCie10Results([]);
+    setShowCie10Dropdown(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identification || !employeeName || !requestDate || !startDate || !endDate || !leaveReason || !incapacityType || !department) {
+      setFeedback({ type: 'error', message: 'Todos los campos marcados con * son obligatorios.' });
+      return;
+    }
+    if (days <= 0) {
+      setFeedback({ type: 'error', message: 'La fecha de fin debe ser igual o posterior a la fecha de inicio.' });
+      return;
+    }
+    setSubmitting(true);
+    setFeedback(null);
+    try {
+      await adminApi.createAbsence({
+        processId,
+        identification,
+        employeeName,
+        requestDate,
+        startDate,
+        endDate,
+        leaveReason,
+        incapacityType,
+        department,
+        diagnosticCode: diagnosticCode || undefined,
+        diagnosticConcept: diagnosticConcept || undefined,
+      });
+      // Limpiar formulario
+      setIdentification('');
+      setEmployeeName('');
+      setRequestDate('');
+      setStartDate('');
+      setEndDate('');
+      setDays(0);
+      setLeaveReason('');
+      setIncapacityType('');
+      setDepartment('');
+      setDiagnosticCode('');
+      setDiagnosticConcept('');
+      setCie10Query('');
+      setCie10Results([]);
+      setFeedback({ type: 'success', message: 'Registro de ausencia creado correctamente.' });
+      loadAbsences();
+    } catch {
+      setFeedback({ type: 'error', message: 'Error al registrar la ausencia. Verifica los datos e intenta de nuevo.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    cursor: 'pointer',
+    WebkitAppearance: 'none',
+    appearance: 'none',
+  };
+
+  return (
+    <>
+      {/* ── Registrar ausencia ──────────────────────────────────────────────── */}
+      <SectionCard title="Registrar ausencia">
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Identificación */}
+            <div>
+              <label htmlFor="abs-identification" style={labelStyle}>Identificación *</label>
+              <input
+                id="abs-identification"
+                type="text"
+                value={identification}
+                onChange={e => setIdentification(e.target.value)}
+                placeholder="Número de cédula"
+                style={inputStyle}
+                className="outline-none"
+                onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+              />
+            </div>
+
+            {/* Nombre del empleado */}
+            <div>
+              <label htmlFor="abs-employee-name" style={labelStyle}>Nombre del empleado *</label>
+              <input
+                id="abs-employee-name"
+                type="text"
+                value={employeeName}
+                onChange={e => setEmployeeName(e.target.value)}
+                placeholder="Nombre completo"
+                style={inputStyle}
+                className="outline-none"
+                onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+              />
+            </div>
+
+            {/* Fecha de solicitud */}
+            <div>
+              <label htmlFor="abs-request-date" style={labelStyle}>Fecha de solicitud *</label>
+              <input
+                id="abs-request-date"
+                type="date"
+                value={requestDate}
+                onChange={e => setRequestDate(e.target.value)}
+                style={{ ...inputStyle, colorScheme: 'dark' }}
+                className="outline-none"
+              />
+            </div>
+
+            {/* Fecha inicio de permiso */}
+            <div>
+              <label htmlFor="abs-start-date" style={labelStyle}>Fecha inicio de permiso *</label>
+              <input
+                id="abs-start-date"
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                style={{ ...inputStyle, colorScheme: 'dark' }}
+                className="outline-none"
+              />
+            </div>
+
+            {/* Fecha fin de permiso */}
+            <div>
+              <label htmlFor="abs-end-date" style={labelStyle}>Fecha fin de permiso *</label>
+              <input
+                id="abs-end-date"
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                style={{ ...inputStyle, colorScheme: 'dark' }}
+                className="outline-none"
+              />
+            </div>
+
+            {/* Días (calculado) */}
+            <div>
+              <label style={labelStyle}>Días (calculado)</label>
+              <input
+                type="number"
+                value={days}
+                readOnly
+                style={{ ...inputStyle, opacity: 0.6, cursor: 'default' }}
+                className="outline-none"
+                tabIndex={-1}
+              />
+            </div>
+
+            {/* Motivo del permiso */}
+            <div>
+              <label htmlFor="abs-leave-reason" style={labelStyle}>Motivo del permiso *</label>
+              <select
+                id="abs-leave-reason"
+                value={leaveReason}
+                onChange={e => setLeaveReason(e.target.value)}
+                style={selectStyle}
+                className="outline-none"
+              >
+                <option value="" style={{ background: '#0e2d4f' }}>Selecciona un motivo</option>
+                {LEAVE_REASONS.map(r => (
+                  <option key={r} value={r} style={{ background: '#0e2d4f' }}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tipo de incapacidad */}
+            <div>
+              <label htmlFor="abs-incapacity-type" style={labelStyle}>Tipo de incapacidad *</label>
+              <select
+                id="abs-incapacity-type"
+                value={incapacityType}
+                onChange={e => setIncapacityType(e.target.value)}
+                style={selectStyle}
+                className="outline-none"
+              >
+                <option value="" style={{ background: '#0e2d4f' }}>Selecciona un tipo</option>
+                {LEAVE_REASONS.map(r => (
+                  <option key={r} value={r} style={{ background: '#0e2d4f' }}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Dependencia */}
+            <div className="sm:col-span-2">
+              <label htmlFor="abs-department" style={labelStyle}>Dependencia *</label>
+              <select
+                id="abs-department"
+                value={department}
+                onChange={e => setDepartment(e.target.value)}
+                style={selectStyle}
+                className="outline-none"
+              >
+                <option value="" style={{ background: '#0e2d4f' }}>Selecciona una dependencia</option>
+                {DEPARTMENTS.map(dep => (
+                  <option key={dep.id} value={dep.label} style={{ background: '#0e2d4f' }}>
+                    {dep.sub ? '   ' : ''}{dep.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Diagnóstico CIE-10 */}
+            <div className="sm:col-span-2" ref={cie10Ref} style={{ position: 'relative' }}>
+              <label style={labelStyle}>Diagnóstico CIE-10 (opcional)</label>
+
+              {/* Chips de selección actual */}
+              {diagnosticCode && (
+                <div
+                  className="flex items-center gap-2 flex-wrap mb-2"
+                >
+                  <span
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                    style={{
+                      background: 'rgba(212,175,55,0.12)',
+                      border: '1px solid rgba(212,175,55,0.30)',
+                      fontFamily: "'Roboto Condensed', sans-serif",
+                      fontSize: 13,
+                      color: '#D4AF37',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{diagnosticCode}</span>
+                    {diagnosticConcept && (
+                      <span style={{ color: 'rgba(255,255,255,0.65)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {diagnosticConcept}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleClearCie10}
+                      aria-label="Limpiar diagnóstico CIE-10"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'rgba(255,255,255,0.50)',
+                        padding: 0,
+                        lineHeight: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+              )}
+
+              {/* Input de búsqueda */}
+              {!diagnosticCode && (
+                <input
+                  type="text"
+                  value={cie10Query}
+                  onChange={e => { setCie10Query(e.target.value); }}
+                  onFocus={() => { if (cie10Results.length > 0) setShowCie10Dropdown(true); }}
+                  placeholder="Busca por nombre o código..."
+                  style={inputStyle}
+                  className="outline-none"
+                  autoComplete="off"
+                />
+              )}
+
+              {/* Dropdown de resultados */}
+              {showCie10Dropdown && (cie10Loading || cie10Results.length > 0) && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 50,
+                    background: 'rgba(10,26,46,0.98)',
+                    border: '1px solid rgba(212,175,55,0.25)',
+                    borderRadius: 10,
+                    marginTop: 4,
+                    maxHeight: 240,
+                    overflowY: 'auto',
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.50)',
+                  }}
+                >
+                  {cie10Loading ? (
+                    <div
+                      className="px-4 py-3"
+                      style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}
+                    >
+                      Buscando...
+                    </div>
+                  ) : (
+                    cie10Results.map(opt => (
+                      <button
+                        key={opt.code}
+                        type="button"
+                        onClick={() => handleSelectCie10(opt)}
+                        className="w-full text-left px-4 py-2.5 transition-all"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          display: 'block',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.10)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            color: '#D4AF37',
+                            marginRight: 8,
+                          }}
+                        >
+                          {opt.code}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "'Roboto Condensed', sans-serif",
+                            fontSize: 13,
+                            color: 'rgba(255,255,255,0.80)',
+                          }}
+                        >
+                          {opt.title}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Feedback */}
+          {feedback && (
+            <div className="mt-4">
+              <FeedbackBanner type={feedback.type} message={feedback.message} />
+            </div>
+          )}
+
+          {/* Botón submit */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-xl font-semibold mt-5 transition-all"
+            style={{
+              height: 52,
+              background: submitting ? 'rgba(212,175,55,0.25)' : '#D4AF37',
+              border: 'none',
+              color: submitting ? 'rgba(255,255,255,0.50)' : '#0e2d4f',
+              fontFamily: "'Antonio', sans-serif",
+              fontSize: '1.05rem',
+              letterSpacing: '0.06em',
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              boxShadow: submitting ? 'none' : '0 4px 16px rgba(212,175,55,0.30)',
+            }}
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span
+                  className="inline-block rounded-full border-2 animate-spin"
+                  style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#0e2d4f' }}
+                />
+                Registrando...
+              </span>
+            ) : (
+              'Registrar ausencia'
+            )}
+          </button>
+        </form>
+      </SectionCard>
+
+      {/* ── Ausencias registradas ───────────────────────────────────────────── */}
+      <SectionCard title={`Ausencias registradas ${year}`}>
+        {loadingAbsences ? (
+          <div className="flex justify-center py-8">
+            <LoadingSpinner />
+          </div>
+        ) : absences.length === 0 ? (
+          <p
+            style={{
+              fontFamily: "'Roboto Condensed', sans-serif",
+              color: 'rgba(255,255,255,0.35)',
+              fontSize: 14,
+              textAlign: 'center',
+              padding: '32px 0',
+            }}
+          >
+            No hay ausencias registradas para este año.
+          </p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+              <thead>
+                <tr>
+                  {[
+                    'Identificación',
+                    'Nombre',
+                    'F. Solicitud',
+                    'F. Inicio',
+                    'F. Fin',
+                    'Días',
+                    'Motivo',
+                    'Dependencia',
+                    'Tipo Incapacidad',
+                    'Código CIE',
+                    'Concepto',
+                  ].map(col => (
+                    <th
+                      key={col}
+                      style={{
+                        ...labelStyle,
+                        textAlign: 'left',
+                        padding: '6px 12px',
+                        whiteSpace: 'nowrap',
+                        borderBottom: '1px solid rgba(255,255,255,0.10)',
+                      }}
+                    >
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {absences.map(abs => (
+                  <tr
+                    key={abs.id}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                  >
+                    {[
+                      abs.identification,
+                      abs.employeeName,
+                      new Date(abs.requestDate + 'T00:00:00').toLocaleDateString('es-CO'),
+                      new Date(abs.startDate + 'T00:00:00').toLocaleDateString('es-CO'),
+                      new Date(abs.endDate + 'T00:00:00').toLocaleDateString('es-CO'),
+                      String(abs.days),
+                      abs.leaveReason,
+                      abs.department,
+                      abs.incapacityType,
+                      abs.diagnosticCode ?? '—',
+                      abs.diagnosticConcept ?? '—',
+                    ].map((cell, i) => (
+                      <td
+                        key={i}
+                        style={{
+                          fontFamily: "'Roboto Condensed', sans-serif",
+                          fontSize: 14,
+                          color: 'rgba(255,255,255,0.85)',
+                          padding: '10px 12px',
+                          whiteSpace: 'nowrap',
+                          maxWidth: 200,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={cell}
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+    </>
   );
 }
 
@@ -1081,6 +1677,12 @@ export default function AdminProvinciaPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+
+        {/* ── Renderizado condicional: Ausentismo reemplaza S1-S5 ─────────── */}
+        {proc.type === 'AUSENTISMO' ? (
+          <AusentismoPanel processId={proc.id} year={year} />
+        ) : (
+          <>
 
         {/* ── S1: Estado actual ─────────────────────────────────────────────── */}
         <SectionCard title="Estado actual">
@@ -2011,6 +2613,9 @@ export default function AdminProvinciaPage() {
             Iniciar reinicio anual
           </button>
         </SectionCard>
+
+          </>
+        )}
 
       </main>
     </div>

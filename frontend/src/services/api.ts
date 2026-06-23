@@ -60,6 +60,15 @@ export const adminApi = {
     api.get(`/annual-reset/preview?year=${year}`).then(r => r.data),
   resetYear: (yearToClose: number) =>
     api.post('/annual-reset', { yearToClose }).then(r => r.data),
+  createAbsence: (data: Record<string, unknown>) =>
+    api.post('/absence', data).then(r => r.data),
+  getAbsenceRecords: (processId: string, year: number) =>
+    api.get(`/absence/process/${processId}?year=${year}`).then(r => r.data),
+};
+
+export const absenceApi = {
+  searchCie10: (q: string) =>
+    api.get(`/absence/cie10/search?q=${encodeURIComponent(q)}`).then(r => r.data),
 };
 
 export const authApi = {

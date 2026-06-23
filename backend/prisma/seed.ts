@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ProcessType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 
-const PROCESSES = [
+const PROCESSES: Array<{ id: string; name: string; provinceId: string; description: string; type?: ProcessType }> = [
   { id: 'pausas-activas',       name: 'Pausas Activas',              provinceId: 'bajo-magdalena',   description: 'Espacios programados de descanso activo para promover la salud física y mental de los colaboradores durante la jornada laboral.' },
   { id: 'cumpleanos',           name: 'Cumpleaños',                   provinceId: 'ubate',            description: 'Celebración mensual de los cumpleaños de los colaboradores del ICCU, fomentando el sentido de pertenencia y el bienestar institucional.' },
   { id: 'lunes-miercoles',      name: 'Lunes y Miércoles de Actívate', provinceId: 'almeidas',        description: 'Programa bisemanal de actividad física y bienestar que convoca a los colaboradores los días lunes y miércoles.' },
@@ -15,7 +15,7 @@ const PROCESSES = [
   { id: 'seleccion',            name: 'Selección y Vinculación',      provinceId: 'gualiva',          description: 'Procesos de convocatoria, evaluación y vinculación del talento humano requerido por el ICCU.' },
   { id: 'evaluacion',           name: 'Evaluación de Desempeño',      provinceId: 'sabana-centro',    description: 'Sistema de evaluación y retroalimentación del desempeño orientado a la mejora continua y el desarrollo profesional.' },
   { id: 'seguridad-industrial', name: 'Seguridad Industrial',         provinceId: 'sabana-occidente', description: 'Actividades de identificación y control de riesgos industriales en las obras y proyectos del ICCU.' },
-  { id: 'medicina-preventiva',  name: 'Medicina Preventiva',          provinceId: 'soacha',           description: 'Programa de vigilancia epidemiológica y exámenes ocupacionales para la detección temprana de enfermedades laborales.' },
+  { id: 'medicina-preventiva',  name: 'Ausentismo',                   provinceId: 'soacha',           description: 'Control y seguimiento de ausencias laborales: incapacidades, permisos y licencias de los colaboradores del ICCU.', type: ProcessType.AUSENTISMO },
   { id: 'recreacion',           name: 'Recreación y Deporte',         provinceId: 'tequendama',       description: 'Programa de actividades recreativas, deportivas y culturales que promueven estilos de vida saludables.' },
   { id: 'apoyo-social',         name: 'Apoyo Social',                 provinceId: 'alto-magdalena',   description: 'Programa de acompañamiento y apoyo a colaboradores que atraviesan situaciones de vulnerabilidad social, emocional o económica.' },
   { id: 'gestion-conocimiento', name: 'Gestión del Conocimiento',     provinceId: 'sumapaz',          description: 'Iniciativas para capturar, documentar y transferir el conocimiento institucional del ICCU.' },
@@ -59,8 +59,8 @@ async function main() {
   for (const p of PROCESSES) {
     await prisma.process.upsert({
       where: { id: p.id },
-      update: { name: p.name, description: p.description, provinceId: p.provinceId },
-      create: p,
+      update: { name: p.name, description: p.description, provinceId: p.provinceId, type: p.type ?? ProcessType.STANDARD },
+      create: { ...p, type: p.type ?? ProcessType.STANDARD },
     });
   }
   console.log(`OK: ${PROCESSES.length} procesos`);

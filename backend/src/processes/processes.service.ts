@@ -6,6 +6,7 @@ type ProcessWithRelations = {
   name: string;
   description: string;
   provinceId: string;
+  type: string;
   subactivities: Array<{
     id: string;
     name: string;
@@ -20,6 +21,7 @@ type ProcessDetailWithRelations = {
   name: string;
   description: string;
   provinceId: string;
+  type: string;
   subactivities: Array<{
     id: string;
     name: string;
@@ -45,6 +47,7 @@ export interface ProcessSummary {
   name: string;
   description: string;
   provinceId: string;
+  type: string;
   progress: number;
   executedTotal: number;
   targetTotal: number;
@@ -65,6 +68,7 @@ export interface ProcessDetail {
   id: string;
   name: string;
   description: string;
+  type: string;
   subactivities: {
     id: string;
     name: string;
@@ -189,6 +193,7 @@ export class ProcessesService {
       id: process.id,
       name: process.name,
       description: process.description,
+      type: process.type,
       subactivities: process.subactivities.map((s) => ({
         id: s.id,
         name: s.name,
@@ -243,6 +248,7 @@ export class ProcessesService {
       name: process.name,
       description: process.description,
       provinceId: process.provinceId,
+      type: process.type,
       progress,
       executedTotal,
       targetTotal,

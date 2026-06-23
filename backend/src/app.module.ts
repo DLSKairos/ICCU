@@ -8,6 +8,7 @@ import { ProcessesModule } from './processes/processes.module.js';
 import { ActivitiesModule } from './activities/activities.module.js';
 import { UploadModule } from './upload/upload.module.js';
 import { AnnualResetModule } from './annual-reset/annual-reset.module.js';
+import { AbsenceModule } from './absence/absence.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AnnualResetModule } from './annual-reset/annual-reset.module.js';
     ActivitiesModule,
     UploadModule,
     AnnualResetModule,
+    AbsenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
