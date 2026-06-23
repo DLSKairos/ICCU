@@ -310,20 +310,20 @@ export default function AdminDashboardPage() {
     <div
       className="min-h-screen"
       style={{
-        background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.12) 0%, transparent 50%), #134174',
+        background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174',
       }}
     >
       {/* Header sticky */}
       <header
         className="sticky top-0 z-40 border-b"
         style={{
-          background: 'rgba(19,65,116,0.97)',
+          background: 'rgba(19,65,116,0.95)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          borderColor: 'rgba(212,175,55,0.18)',
+          borderColor: 'rgba(212,175,55,0.20)',
         }}
       >
-        <div className="px-5 sm:px-8 h-[68px] flex items-center gap-4">
+        <div className="px-5 sm:px-8 h-[72px] flex items-center gap-4">
           <IccuLogo height={48} />
 
           <div className="flex-1 min-w-0">

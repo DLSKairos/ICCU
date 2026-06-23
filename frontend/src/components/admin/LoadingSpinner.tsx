@@ -41,7 +41,7 @@ export function LoadingSpinner({
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: '#134174' }}
+        style={{ background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174' }}
       >
         {spinner}
       </div>

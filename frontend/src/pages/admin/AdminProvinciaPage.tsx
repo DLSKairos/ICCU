@@ -256,9 +256,11 @@ function ResetModal({ onClose }: ResetModalProps) {
       <div
         className="w-full max-w-lg rounded-2xl border flex flex-col gap-5 p-6"
         style={{
-          background: 'rgba(10,26,46,0.98)',
+          background: 'rgba(19,65,116,0.92)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
           borderColor: 'rgba(224,9,20,0.40)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.65)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
           maxHeight: '90dvh',
           overflowY: 'auto',
         }}
@@ -709,7 +711,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 autoComplete="off"
               />
               {showEmpDropdown && activeEmpField === 'identification' && (empLoading || empResults.length > 0) && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'rgba(10,26,46,0.98)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 16px 40px rgba(0,0,0,0.50)' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'rgba(13,52,96,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 16px 40px rgba(0,0,0,0.45)' }}>
                   {empLoading ? (
                     <div className="px-4 py-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>Buscando...</div>
                   ) : empResults.map(emp => (
@@ -738,7 +740,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 autoComplete="off"
               />
               {showEmpDropdown && activeEmpField === 'employeeName' && (empLoading || empResults.length > 0) && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'rgba(10,26,46,0.98)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 16px 40px rgba(0,0,0,0.50)' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'rgba(13,52,96,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 16px 40px rgba(0,0,0,0.45)' }}>
                   {empLoading ? (
                     <div className="px-4 py-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>Buscando...</div>
                   ) : empResults.map(emp => (
@@ -925,13 +927,15 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     left: 0,
                     right: 0,
                     zIndex: 50,
-                    background: 'rgba(10,26,46,0.98)',
+                    background: 'rgba(13,52,96,0.97)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
                     border: '1px solid rgba(212,175,55,0.25)',
                     borderRadius: 10,
                     marginTop: 4,
                     maxHeight: 240,
                     overflowY: 'auto',
-                    boxShadow: '0 16px 40px rgba(0,0,0,0.50)',
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
                   }}
                 >
                   {cie10Loading ? (
@@ -1392,7 +1396,7 @@ export default function AdminProvinciaPage() {
 
   if (error || !proc) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#134174' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174' }}>
         <div className="text-center max-w-sm w-full">
           <ErrorMessage
             message={error ?? 'Proceso no encontrado.'}
@@ -1439,7 +1443,7 @@ export default function AdminProvinciaPage() {
     <div
       className="min-h-screen"
       style={{
-        background: 'radial-gradient(ellipse at 10% 20%, rgba(0,135,207,0.10) 0%, transparent 50%), #134174',
+        background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174',
       }}
     >
       {showResetModal && <ResetModal onClose={() => setShowResetModal(false)} />}
@@ -1454,9 +1458,11 @@ export default function AdminProvinciaPage() {
           <div
             className="w-full max-w-lg rounded-2xl border flex flex-col"
             style={{
-              background: 'rgba(10,26,46,0.98)',
-              borderColor: 'rgba(0,135,207,0.40)',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.65)',
+              background: 'rgba(19,65,116,0.92)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderColor: 'rgba(0,135,207,0.35)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
               maxHeight: '90dvh',
             }}
           >
@@ -1568,9 +1574,11 @@ export default function AdminProvinciaPage() {
           <div
             className="w-full max-w-md rounded-2xl border flex flex-col gap-5 p-6"
             style={{
-              background: 'rgba(10,26,46,0.98)',
-              borderColor: 'rgba(0,135,207,0.40)',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.65)',
+              background: 'rgba(19,65,116,0.92)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderColor: 'rgba(0,135,207,0.35)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
           >
             {/* Header modal */}
@@ -1669,13 +1677,13 @@ export default function AdminProvinciaPage() {
       <header
         className="sticky top-0 z-40 border-b"
         style={{
-          background: 'rgba(19,65,116,0.97)',
+          background: 'rgba(19,65,116,0.95)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          borderColor: 'rgba(212,175,55,0.16)',
+          borderColor: 'rgba(212,175,55,0.20)',
         }}
       >
-        <div className="px-4 sm:px-6 h-[64px] flex items-center gap-3">
+        <div className="px-4 sm:px-6 h-[72px] flex items-center gap-3">
           {/* Volver */}
           <button
             onClick={() => navigate('/admin/dashboard')}
