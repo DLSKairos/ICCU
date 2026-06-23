@@ -1234,9 +1234,26 @@ export default function AdminProvinciaPage() {
                   )}
                 </div>
                 {sub.isLocked ? (
-                  <span style={{ fontFamily: "'Antonio', sans-serif", fontSize: '1.5rem', color: '#4ade80', minWidth: 56, textAlign: 'right', lineHeight: 1 }}>
-                    {sub.target || 0}
-                  </span>
+                  <>
+                    <span style={{ fontFamily: "'Antonio', sans-serif", fontSize: '1.5rem', color: '#4ade80', minWidth: 56, textAlign: 'right', lineHeight: 1 }}>
+                      {sub.target || 0}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteSub(sub.id)}
+                      disabled={deletingSubId === sub.id}
+                      className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
+                      style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
+                      title="Eliminar del plan"
+                    >
+                      {deletingSubId === sub.id ? (
+                        <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(255,154,162,0.3)', borderTopColor: '#ff9aa2' }} />
+                      ) : (
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                  </>
                 ) : (
                   <>
                     <input

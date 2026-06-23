@@ -69,6 +69,8 @@ export interface ProcessDetail {
     id: string;
     name: string;
     annualTarget: number;
+    target: number;
+    isLocked: boolean;
     executions: { date: string; count: number }[];
   }[];
   activities: {
@@ -191,6 +193,8 @@ export class ProcessesService {
         id: s.id,
         name: s.name,
         annualTarget: s.targets[0]?.target ?? 0,
+        target: s.targets[0]?.target ?? 0,
+        isLocked: s.targets[0]?.isLocked ?? false,
         executions: s.executions.map((e) => ({
           date: e.date instanceof Date
             ? e.date.toISOString().split('T')[0]
