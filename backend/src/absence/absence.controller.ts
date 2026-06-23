@@ -17,10 +17,15 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 export class AbsenceController {
   constructor(private readonly absenceService: AbsenceService) {}
 
-  // Ruta estática ANTES que la dinámica
+  // Rutas estáticas ANTES que las dinámicas
   @Get('cie10/search')
   searchCie10(@Query('q') q: string) {
     return this.absenceService.searchCie10(q ?? '');
+  }
+
+  @Get('employees/search')
+  searchEmployees(@Query('q') q: string) {
+    return this.absenceService.searchEmployees(q ?? '');
   }
 
   @Get('process/:processId')

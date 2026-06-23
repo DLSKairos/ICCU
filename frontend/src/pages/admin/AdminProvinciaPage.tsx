@@ -59,6 +59,11 @@ interface Cie10Option {
   title: string;
 }
 
+interface EmpOption {
+  identification: string;
+  employeeName: string;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getPercentage(proc: AdminProcess): number {
@@ -513,6 +518,15 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
   const [showCie10Dropdown, setShowCie10Dropdown] = useState(false);
   const cie10Ref = useRef<HTMLDivElement>(null);
 
+  // Autocomplete de empleados
+  const [empQuery, setEmpQuery] = useState('');
+  const [empResults, setEmpResults] = useState<EmpOption[]>([]);
+  const [empLoading, setEmpLoading] = useState(false);
+  const [showEmpDropdown, setShowEmpDropdown] = useState(false);
+  const [activeEmpField, setActiveEmpField] = useState<'identification' | 'employeeName' | null>(null);
+  const empIdRef = useRef<HTMLDivElement>(null);
+  const empNameRef = useRef<HTMLDivElement>(null);
+
   // Cargar ausencias al montar
   const loadAbsences = () => {
     setLoadingAbsences(true);
@@ -568,6 +582,46 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Búsqueda de empleados con debounce
+  useEffect(() => {
+    if (!empQuery || empQuery.length < 2) { setEmpResults([]); setShowEmpDropdown(false); return; }
+    const timer = setTimeout(async () => {
+      setEmpLoading(true);
+      try {
+        const results = await absenceApi.searchEmployees(empQuery);
+        const list = Array.isArray(results) ? results : [];
+        setEmpResults(list);
+        setShowEmpDropdown(list.length > 0);
+      } catch {
+        setEmpResults([]);
+      } finally {
+        setEmpLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [empQuery]);
+
+  // Cerrar dropdown empleados al clic fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const insideId = empIdRef.current?.contains(target);
+      const insideName = empNameRef.current?.contains(target);
+      if (!insideId && !insideName) setShowEmpDropdown(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleEmpSelect = (emp: EmpOption) => {
+    setIdentification(emp.identification);
+    setEmployeeName(emp.employeeName);
+    setEmpQuery('');
+    setEmpResults([]);
+    setShowEmpDropdown(false);
+    setActiveEmpField(null);
+  };
 
   const handleSelectCie10 = (option: Cie10Option) => {
     setDiagnosticCode(option.code);
@@ -625,6 +679,8 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
       setDiagnosticConcept('');
       setCie10Query('');
       setCie10Results([]);
+      setEmpQuery('');
+      setEmpResults([]);
       setFeedback({ type: 'success', message: 'Registro de ausencia creado correctamente.' });
       loadAbsences();
     } catch {
@@ -649,35 +705,61 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             {/* Identificación */}
-            <div>
+            <div ref={empIdRef} style={{ position: 'relative' }}>
               <label htmlFor="abs-identification" style={labelStyle}>Identificación *</label>
               <input
                 id="abs-identification"
                 type="text"
                 value={identification}
-                onChange={e => setIdentification(e.target.value)}
+                onChange={e => { setIdentification(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('identification'); }}
+                onFocus={e => { setActiveEmpField('identification'); if (empResults.length > 0) setShowEmpDropdown(true); e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                 placeholder="Número de cédula"
                 style={inputStyle}
                 className="outline-none"
-                onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                autoComplete="off"
               />
+              {showEmpDropdown && activeEmpField === 'identification' && (empLoading || empResults.length > 0) && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'rgba(10,26,46,0.98)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 16px 40px rgba(0,0,0,0.50)' }}>
+                  {empLoading ? (
+                    <div className="px-4 py-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>Buscando...</div>
+                  ) : empResults.map(emp => (
+                    <button key={emp.identification} type="button" onClick={() => handleEmpSelect(emp)} className="w-full text-left px-4 py-2.5 transition-all" style={{ background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'block' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.10)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#D4AF37', marginRight: 8 }}>{emp.identification}</span>
+                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.80)' }}>{emp.employeeName}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Nombre del empleado */}
-            <div>
+            <div ref={empNameRef} style={{ position: 'relative' }}>
               <label htmlFor="abs-employee-name" style={labelStyle}>Nombre del empleado *</label>
               <input
                 id="abs-employee-name"
                 type="text"
                 value={employeeName}
-                onChange={e => setEmployeeName(e.target.value)}
+                onChange={e => { setEmployeeName(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('employeeName'); }}
+                onFocus={e => { setActiveEmpField('employeeName'); if (empResults.length > 0) setShowEmpDropdown(true); e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                 placeholder="Nombre completo"
                 style={inputStyle}
                 className="outline-none"
-                onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                autoComplete="off"
               />
+              {showEmpDropdown && activeEmpField === 'employeeName' && (empLoading || empResults.length > 0) && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'rgba(10,26,46,0.98)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto', boxShadow: '0 16px 40px rgba(0,0,0,0.50)' }}>
+                  {empLoading ? (
+                    <div className="px-4 py-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>Buscando...</div>
+                  ) : empResults.map(emp => (
+                    <button key={emp.identification} type="button" onClick={() => handleEmpSelect(emp)} className="w-full text-left px-4 py-2.5 transition-all" style={{ background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'block' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.10)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#D4AF37', marginRight: 8 }}>{emp.identification}</span>
+                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.80)' }}>{emp.employeeName}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Fecha de solicitud */}

@@ -69,6 +69,8 @@ export const adminApi = {
 export const absenceApi = {
   searchCie10: (q: string) =>
     api.get(`/absence/cie10/search?q=${encodeURIComponent(q)}`).then(r => r.data),
+  searchEmployees: (q: string) =>
+    api.get(`/absence/employees/search?q=${encodeURIComponent(q)}`).then(r => r.data),
 };
 
 export const authApi = {

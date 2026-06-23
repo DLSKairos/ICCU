@@ -86,6 +86,24 @@ export class AbsenceService {
     });
   }
 
+  // ─── Employee search ────────────────────────────────────────────────────────
+
+  async searchEmployees(q: string): Promise<{ identification: string; employeeName: string }[]> {
+    if (!q || q.length < 2) return [];
+    return this.prisma.absenceRecord.findMany({
+      where: {
+        OR: [
+          { identification: { contains: q, mode: 'insensitive' } },
+          { employeeName: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: { identification: true, employeeName: true },
+      distinct: ['identification', 'employeeName'],
+      orderBy: [{ identification: 'asc' }, { employeeName: 'asc' }],
+      take: 10,
+    });
+  }
+
   // ─── CIE-10 search ──────────────────────────────────────────────────────────
 
   async searchCie10(q: string): Promise<Cie10Result[]> {
