@@ -197,6 +197,19 @@ model HistoricalPercentageSubactivity {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// Cie10Code
+// Catálogo local de códigos CIE-10 (10.978 entradas).
+// Importado desde el dataset verasativa/CIE-10 en el seed.
+// Permite búsqueda por código sin depender de API externa.
+// ─────────────────────────────────────────────────────────────────
+model Cie10Code {
+  code        String @id // e.g., "E10", "E10.0"
+  description String     // e.g., "Diabetes mellitus insulinodependiente"
+
+  @@index([code])
+}
+
+// ─────────────────────────────────────────────────────────────────
 // AbsenceRecord
 // Registros de ausentismo del proceso con type = AUSENTISMO.
 // Los días se calculan en el backend (endDate - startDate + 1,
@@ -212,7 +225,6 @@ model AbsenceRecord {
   startDate         DateTime @db.Date
   endDate           DateTime @db.Date
   days              Int
-  leaveReason       String
   incapacityType    String
   department        String
   diagnosticCode    String?

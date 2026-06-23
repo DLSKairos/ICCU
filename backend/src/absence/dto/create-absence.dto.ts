@@ -33,11 +33,6 @@ export class CreateAbsenceDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  leaveReason: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
   incapacityType: string;
 
   @IsString()

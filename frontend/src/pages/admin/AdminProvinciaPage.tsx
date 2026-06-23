@@ -46,7 +46,6 @@ interface AbsenceRecord {
   startDate: string;
   endDate: string;
   days: number;
-  leaveReason: string;
   incapacityType: string;
   department: string;
   diagnosticCode?: string;
@@ -487,13 +486,6 @@ function ResetModal({ onClose }: ResetModalProps) {
 
 // ── Panel de Ausentismo ───────────────────────────────────────────────────────
 
-const LEAVE_REASONS = [
-  'Común',
-  'Accidente de tránsito',
-  'Licencia paternidad y/o maternidad',
-  'Accidente de trabajo',
-];
-
 function AusentismoPanel({ processId, year }: { processId: string; year: number }) {
   const [absences, setAbsences] = useState<AbsenceRecord[]>([]);
   const [loadingAbsences, setLoadingAbsences] = useState(true);
@@ -507,7 +499,6 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [days, setDays] = useState(0);
-  const [leaveReason, setLeaveReason] = useState('');
   const [incapacityType, setIncapacityType] = useState('');
   const [department, setDepartment] = useState('');
   const [diagnosticCode, setDiagnosticCode] = useState('');
@@ -556,7 +547,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
   // Búsqueda CIE-10 con debounce
   useEffect(() => {
-    if (cie10Query.length < 3) { setCie10Results([]); setShowCie10Dropdown(false); return; }
+    if (cie10Query.length < 2) { setCie10Results([]); setShowCie10Dropdown(false); return; }
     const timer = setTimeout(async () => {
       setCie10Loading(true);
       try {
@@ -641,7 +632,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identification || !employeeName || !requestDate || !startDate || !endDate || !leaveReason || !incapacityType || !department) {
+    if (!identification || !employeeName || !requestDate || !startDate || !endDate || !incapacityType || !department) {
       setFeedback({ type: 'error', message: 'Todos los campos marcados con * son obligatorios.' });
       return;
     }
@@ -659,7 +650,6 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
         requestDate,
         startDate,
         endDate,
-        leaveReason,
         incapacityType,
         department,
         diagnosticCode: diagnosticCode || undefined,
@@ -672,7 +662,6 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
       setStartDate('');
       setEndDate('');
       setDays(0);
-      setLeaveReason('');
       setIncapacityType('');
       setDepartment('');
       setDiagnosticCode('');
@@ -814,23 +803,6 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
               />
             </div>
 
-            {/* Motivo del permiso */}
-            <div>
-              <label htmlFor="abs-leave-reason" style={labelStyle}>Motivo del permiso *</label>
-              <select
-                id="abs-leave-reason"
-                value={leaveReason}
-                onChange={e => setLeaveReason(e.target.value)}
-                style={selectStyle}
-                className="outline-none"
-              >
-                <option value="" style={{ background: '#0e2d4f' }}>Selecciona un motivo</option>
-                {LEAVE_REASONS.map(r => (
-                  <option key={r} value={r} style={{ background: '#0e2d4f' }}>{r}</option>
-                ))}
-              </select>
-            </div>
-
             {/* Tipo de incapacidad */}
             <div>
               <label htmlFor="abs-incapacity-type" style={labelStyle}>Tipo de incapacidad *</label>
@@ -842,14 +814,14 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 className="outline-none"
               >
                 <option value="" style={{ background: '#0e2d4f' }}>Selecciona un tipo</option>
-                {LEAVE_REASONS.map(r => (
+                {['Común', 'Accidente de tránsito', 'Licencia paternidad y/o maternidad', 'Accidente de trabajo'].map(r => (
                   <option key={r} value={r} style={{ background: '#0e2d4f' }}>{r}</option>
                 ))}
               </select>
             </div>
 
             {/* Dependencia */}
-            <div className="sm:col-span-2">
+            <div>
               <label htmlFor="abs-department" style={labelStyle}>Dependencia *</label>
               <select
                 id="abs-department"
@@ -922,7 +894,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                   value={cie10Query}
                   onChange={e => { setCie10Query(e.target.value); }}
                   onFocus={() => { if (cie10Results.length > 0) setShowCie10Dropdown(true); }}
-                  placeholder="Busca por nombre o código..."
+                  placeholder="Busca por código CIE-10 (ej: E10, J18) o por nombre..."
                   style={inputStyle}
                   className="outline-none"
                   autoComplete="off"
@@ -1068,7 +1040,6 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     'F. Inicio',
                     'F. Fin',
                     'Días',
-                    'Motivo',
                     'Dependencia',
                     'Tipo Incapacidad',
                     'Código CIE',
@@ -1102,7 +1073,6 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                       new Date(abs.startDate + 'T00:00:00').toLocaleDateString('es-CO'),
                       new Date(abs.endDate + 'T00:00:00').toLocaleDateString('es-CO'),
                       String(abs.days),
-                      abs.leaveReason,
                       abs.department,
                       abs.incapacityType,
                       abs.diagnosticCode ?? '—',

@@ -2,15 +2,8 @@ import {
   Injectable,
   BadRequestException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateAbsenceDto } from './dto/create-absence.dto.js';
-
-interface CachedToken {
-  value: string;
-  expiresAt: number; // timestamp en ms
-}
 
 export interface Cie10Result {
   code: string;
@@ -19,12 +12,7 @@ export interface Cie10Result {
 
 @Injectable()
 export class AbsenceService {
-  private cachedToken: CachedToken | null = null;
-
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ─── Create ─────────────────────────────────────────────────────────────────
 
@@ -67,7 +55,6 @@ export class AbsenceService {
         startDate: start,
         endDate: end,
         days,
-        leaveReason: dto.leaveReason,
         incapacityType: dto.incapacityType,
         department: dto.department,
         diagnosticCode: dto.diagnosticCode ?? null,
@@ -104,86 +91,44 @@ export class AbsenceService {
     });
   }
 
-  // ─── CIE-10 search ──────────────────────────────────────────────────────────
+  // ─── CIE-10 search (catálogo local BD) ──────────────────────────────────────
+  // Busca por código (startsWith) y por descripción (contains) en paralelo,
+  // priorizando coincidencias exactas de código.
 
   async searchCie10(q: string): Promise<Cie10Result[]> {
-    const clientId = this.configService.get<string>('WHO_ICD_CLIENT_ID');
-    const clientSecret = this.configService.get<string>('WHO_ICD_CLIENT_SECRET');
+    if (!q || q.trim().length < 1) return [];
 
-    if (!clientId || !clientSecret) {
-      return [];
+    const trimmed = q.trim();
+    const query = trimmed.toUpperCase();
+    // Un código CIE-10 empieza con letra seguida de dígito (A00, E10, J18…)
+    const looksLikeCode = /^[A-Z][0-9]/.test(query);
+
+    const byCode = await this.prisma.cie10Code.findMany({
+      where: { code: { startsWith: query } },
+      orderBy: { code: 'asc' },
+      take: 10,
+    });
+
+    if (looksLikeCode || byCode.length >= 10) {
+      return byCode.map((r) => ({ code: r.code, title: r.description }));
     }
 
-    try {
-      const token = await this.getWhoToken(clientId, clientSecret);
+    // Solo cuando no parece código y hay pocas coincidencias: completar con descripción
+    const byDesc = await this.prisma.cie10Code.findMany({
+      where: { description: { contains: trimmed, mode: 'insensitive' } },
+      orderBy: { code: 'asc' },
+      take: 10,
+    });
 
-      const response = await axios.get(
-        `https://id.who.int/icd/release/11/2024-01/mms/search`,
-        {
-          params: {
-            q,
-            useFlexisearch: false,
-            flatResults: false,
-            highlightingEnabled: false,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-            'Accept-Language': 'es',
-            'API-Version': 'v2',
-          },
-        },
-      );
-
-      const entities: Array<{ theCode: string; title: string }> =
-        (response.data?.destinationEntities ?? []).filter(
-          (e: { theCode: string }) => e.theCode,
-        );
-
-      return entities.slice(0, 10).map((item) => ({
-        code: item.theCode,
-        title: item.title.replace(/<[^>]+>/g, ''),
-      }));
-    } catch {
-      return [];
+    const seen = new Set<string>(byCode.map((r) => r.code));
+    const results = byCode.map((r) => ({ code: r.code, title: r.description }));
+    for (const row of byDesc) {
+      if (!seen.has(row.code)) {
+        seen.add(row.code);
+        results.push({ code: row.code, title: row.description });
+      }
+      if (results.length >= 10) break;
     }
-  }
-
-  // ─── Token OAuth 2.0 (caché en memoria) ─────────────────────────────────────
-
-  private async getWhoToken(
-    clientId: string,
-    clientSecret: string,
-  ): Promise<string> {
-    const now = Date.now();
-
-    if (this.cachedToken && this.cachedToken.expiresAt > now) {
-      return this.cachedToken.value;
-    }
-
-    const params = new URLSearchParams();
-    params.append('client_id', clientId);
-    params.append('client_secret', clientSecret);
-    params.append('scope', 'icdapi_access');
-    params.append('grant_type', 'client_credentials');
-
-    const response = await axios.post(
-      'https://icdaccessmanagement.who.int/connect/token',
-      params.toString(),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      },
-    );
-
-    const accessToken: string = response.data.access_token;
-    const expiresIn: number = response.data.expires_in;
-
-    // Guardar con 60 segundos de margen
-    this.cachedToken = {
-      value: accessToken,
-      expiresAt: now + (expiresIn - 60) * 1000,
-    };
-
-    return accessToken;
+    return results;
   }
 }

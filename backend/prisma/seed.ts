@@ -1,4 +1,6 @@
 import { PrismaClient, ProcessType } from '@prisma/client';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const prisma = new PrismaClient();
 
@@ -74,6 +76,24 @@ async function main() {
     });
   }
   console.log(`OK: ${HISTORICAL.length} registros históricos`);
+
+  // ── Importar catálogo CIE-10 (solo si la tabla está vacía) ──────────────────
+  const cie10Count = await prisma.cie10Code.count();
+  if (cie10Count === 0) {
+    const cie10Raw = readFileSync(join(__dirname, 'cie10_codes.json'), 'utf-8');
+    const cie10Codes: { code: string; description: string }[] = JSON.parse(cie10Raw);
+    // Insertar en lotes de 500 para no saturar la conexión
+    const batchSize = 500;
+    for (let i = 0; i < cie10Codes.length; i += batchSize) {
+      await prisma.cie10Code.createMany({
+        data: cie10Codes.slice(i, i + batchSize),
+        skipDuplicates: true,
+      });
+    }
+    console.log(`OK: ${cie10Codes.length} códigos CIE-10 importados`);
+  } else {
+    console.log(`OK: catálogo CIE-10 ya presente (${cie10Count} códigos)`);
+  }
 
   console.log('');
   console.log('Seed completado exitosamente');
