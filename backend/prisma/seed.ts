@@ -11,7 +11,6 @@ const PROCESSES: Array<{ id: string; name: string; provinceId: string; descripti
   { id: 'lunes-miercoles',      name: 'Lunes y Miércoles de Actívate', provinceId: 'almeidas',        description: 'Programa bisemanal de actividad física y bienestar que convoca a los colaboradores los días lunes y miércoles.' },
   { id: 'dia-salud',            name: 'Día de la Salud',              provinceId: 'guavio',           description: 'Jornada anual de valoraciones médicas, actividades preventivas y promoción de hábitos saludables para todos los colaboradores del ICCU.' },
   { id: 'sst',                  name: 'SST',                          provinceId: 'medina',           description: 'Sistema de Gestión de Seguridad y Salud en el Trabajo. Implementación de actividades de prevención, capacitación e inspección.' },
-  { id: 'bienestar-laboral',    name: 'Bienestar Laboral',            provinceId: 'oriente',          description: 'Actividades orientadas a mejorar la calidad de vida y el sentido de pertenencia de los colaboradores.' },
   { id: 'clima-organizacional', name: 'Clima Organizacional',         provinceId: 'rionegro',         description: 'Medición, análisis e intervención del ambiente laboral para identificar fortalezas y oportunidades de mejora.' },
   { id: 'capacitacion',         name: 'Capacitación y Desarrollo',    provinceId: 'magdalena-centro', description: 'Plan de formación continua para fortalecer las competencias técnicas y transversales de los colaboradores del ICCU.' },
   { id: 'seleccion',            name: 'Selección y Vinculación',      provinceId: 'gualiva',          description: 'Procesos de convocatoria, evaluación y vinculación del talento humano requerido por el ICCU.' },
@@ -30,7 +29,6 @@ const HISTORICAL: Array<{ processId: string; year: number; percentage: number }>
   { processId: 'lunes-miercoles',       year: 2023, percentage: 85  }, { processId: 'lunes-miercoles',       year: 2024, percentage: 89  },
   { processId: 'dia-salud',            year: 2023, percentage: 100 }, { processId: 'dia-salud',            year: 2024, percentage: 100 },
   { processId: 'sst',                   year: 2023, percentage: 72  }, { processId: 'sst',                   year: 2024, percentage: 87  },
-  { processId: 'bienestar-laboral',     year: 2023, percentage: 65  }, { processId: 'bienestar-laboral',     year: 2024, percentage: 83  },
   { processId: 'clima-organizacional',  year: 2023, percentage: 80  }, { processId: 'clima-organizacional',  year: 2024, percentage: 88  },
   { processId: 'capacitacion',          year: 2023, percentage: 61  }, { processId: 'capacitacion',          year: 2024, percentage: 74  },
   { processId: 'seleccion',             year: 2023, percentage: 90  }, { processId: 'seleccion',             year: 2024, percentage: 95  },
@@ -56,6 +54,10 @@ async function main() {
     prisma.subactivity.deleteMany(),
     prisma.historicalPercentage.deleteMany(),
   ]);
+
+  // Eliminar procesos que ya no están en la lista (limpieza de obsoletos)
+  const knownIds = PROCESSES.map(p => p.id);
+  await prisma.process.deleteMany({ where: { id: { notIn: knownIds } } });
 
   // Upsert procesos
   for (const p of PROCESSES) {

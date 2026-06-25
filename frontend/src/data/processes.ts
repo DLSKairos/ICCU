@@ -44,7 +44,6 @@ export const PROVINCE_TO_PROCESS: Record<string, string> = {
   'almeidas':          'lunes-miercoles',
   'guavio':            'dia-salud',
   'medina':            'sst',
-  'oriente':           'bienestar-laboral',
   'rionegro':          'clima-organizacional',
   'magdalena-centro':  'capacitacion',
   'gualiva':           'seleccion',
