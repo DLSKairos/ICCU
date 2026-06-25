@@ -12,6 +12,8 @@ import {
 import { AbsenceService } from './absence.service.js';
 import { CreateAbsenceDto } from './dto/create-absence.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @Controller('absence')
 export class AbsenceController {
@@ -53,7 +55,8 @@ export class AbsenceController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   create(@Body() dto: CreateAbsenceDto) {
     return this.absenceService.create(dto);
   }

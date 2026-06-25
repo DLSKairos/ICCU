@@ -1134,7 +1134,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 export default function AdminProvinciaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
 
   const [proc, setProc] = useState<AdminProcess | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1213,6 +1213,13 @@ export default function AdminProvinciaPage() {
     loadProcess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Redirigir si el proceso es de ausentismo y el usuario no es admin
+  useEffect(() => {
+    if (proc && proc.type === 'AUSENTISMO' && !isAdmin) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [proc, isAdmin, navigate]);
 
   // ── Manejo de fotos ─────────────────────────────────────────────────────────
 

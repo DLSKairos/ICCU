@@ -265,7 +265,7 @@ function ProcessCard({ proc, year, onManage, isAbsence = false }: ProcessCardPro
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
 
   const [processes, setProcesses] = useState<AdminProcess[]>([]);
   const [loading, setLoading] = useState(true);
@@ -433,8 +433,8 @@ export default function AdminDashboardPage() {
               />
             </div>
 
-            {/* Ausentismo — destacado arriba */}
-            {absenceProcess && (
+            {/* Ausentismo — destacado arriba, solo para admin */}
+            {isAdmin && absenceProcess && (
               <div className="mb-6">
                 <div className="flex items-center gap-3 mb-3">
                   <h2
