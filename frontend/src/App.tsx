@@ -6,6 +6,7 @@ import { ProvinciaPage } from './pages/ProvinciaPage';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminProvinciaPage from './pages/admin/AdminProvinciaPage';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -15,6 +16,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
+      <PWAInstallBanner />
       <BrowserRouter>
         <Routes>
           {/* Rutas públicas — no modificar */}
