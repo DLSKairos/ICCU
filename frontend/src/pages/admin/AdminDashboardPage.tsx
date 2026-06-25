@@ -311,6 +311,7 @@ export default function AdminDashboardPage() {
       className="min-h-screen"
       style={{
         background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174',
+        paddingBottom: 34,
       }}
     >
       {/* Header sticky */}

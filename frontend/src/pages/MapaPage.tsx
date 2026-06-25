@@ -80,7 +80,7 @@ export function MapaPage() {
       </main>
 
       {/* Footer — botón admin izq | logo der */}
-      <footer className="flex items-center justify-between px-4 sm:px-8 pb-3 sm:pb-4 shrink-0">
+      <footer className="flex items-center justify-between px-4 sm:px-8 shrink-0" style={{ paddingBottom: 46 }}>
         <button
           onClick={() => navigate('/admin')}
           title="Acceso administrador"

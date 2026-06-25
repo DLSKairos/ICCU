@@ -377,7 +377,7 @@ export function ProvinciaPage() {
 
           <footer
             className="border-t flex items-center justify-end px-4 sm:px-8"
-            style={{ height: 72, borderColor: 'rgba(212,175,55,0.15)' }}
+            style={{ height: 106, borderColor: 'rgba(212,175,55,0.15)', paddingBottom: 34 }}
           >
             <img
               src="/logos/logo_completo.png"
