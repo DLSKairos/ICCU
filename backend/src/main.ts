@@ -14,7 +14,13 @@ async function bootstrap() {
     .map((o) => o.trim());
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
+        callback(null, requestOrigin || true);
+      } else {
+        callback(new Error(`Origin not allowed: ${requestOrigin}`));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });
