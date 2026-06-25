@@ -26,7 +26,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-  const port = process.env.BACKEND_PORT ?? 5000;
+  const port = process.env.PORT ?? process.env.BACKEND_PORT ?? 5000;
   await app.listen(port);
 }
 bootstrap();
