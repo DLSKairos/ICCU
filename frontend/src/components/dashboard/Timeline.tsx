@@ -49,7 +49,7 @@ export function Timeline({ process }: TimelineProps) {
                 boxShadow: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1)',
               }}
             >
-              <div className="flex items-start justify-between gap-4 mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-4 mb-2">
                 <div>
                   <h3
                     className="font-medium"

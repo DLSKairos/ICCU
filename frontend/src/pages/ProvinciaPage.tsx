@@ -51,7 +51,7 @@ export function ProvinciaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>('mensual');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [process, setProcess] = useState<Process | null>(null);
   const [allProcesses, setAllProcesses] = useState<Process[]>([]);
@@ -108,17 +108,37 @@ export function ProvinciaPage() {
         className="sticky top-0 z-40 border-b"
         style={{ background: 'rgba(19,65,116,0.95)', backdropFilter: 'blur(8px)', borderColor: 'rgba(212,175,55,0.2)' }}
       >
-        <div className="px-8 py-0 h-[76px] flex items-center gap-4">
+        <div className="px-4 sm:px-8 py-0 h-[76px] flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => navigate('/mapa')}
-            className="flex items-center gap-2 cursor-pointer font-semibold"
-            style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(255,255,255,0.85)', background: 'none', border: 'none', fontSize: 18 }}
+            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer font-semibold shrink-0"
+            style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(255,255,255,0.85)', background: 'none', border: 'none', fontSize: 16 }}
           >
-            <svg width={24} height={24} viewBox="0 0 16 16" fill="none">
+            <svg width={20} height={20} viewBox="0 0 16 16" fill="none">
               <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            Volver al mapa
+            <span className="hidden xs:inline sm:inline">Volver al mapa</span>
+            <span className="sm:hidden">Volver</span>
           </button>
+
+          {/* Toggle menú — solo mobile */}
+          <button
+            className="md:hidden flex items-center justify-center cursor-pointer"
+            onClick={() => setSidebarOpen(prev => !prev)}
+            style={{ width: 36, height: 36, background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', flexShrink: 0 }}
+            aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú de procesos'}
+          >
+            {sidebarOpen ? (
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+
           <div className="flex-1" />
           <IccuLogo height={76} />
           <span
@@ -130,15 +150,31 @@ export function ProvinciaPage() {
         </div>
       </header>
 
+      {/* Backdrop mobile */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-20"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <div className="flex">
-        {/* Aside colapsable */}
+        {/* Aside — mobile: overlay fijo | desktop: inline colapsable */}
         <aside
-          className="shrink-0 border-r transition-[width] duration-300 ease-in-out"
+          className={[
+            'shrink-0 border-r ease-in-out',
+            'fixed md:relative z-30 md:z-auto',
+            'top-[76px] md:top-auto bottom-0 md:bottom-auto left-0',
+            'w-[220px] transition-[width,transform] duration-300',
+            sidebarOpen
+              ? 'translate-x-0 md:w-[220px]'
+              : '-translate-x-full md:translate-x-0 md:w-9',
+          ].join(' ')}
           style={{
-            width: sidebarOpen ? 220 : 36,
             minHeight: 'calc(100vh - 77px)',
             borderColor: 'rgba(0,135,207,0.18)',
-            background: 'rgba(13,52,96,0.80)',
+            background: 'rgba(13,52,96,0.95)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
           }}
@@ -221,7 +257,7 @@ export function ProvinciaPage() {
 
         {/* Contenido principal */}
         <div className="flex-1 min-w-0">
-          <main className="max-w-6xl mx-auto px-6 py-10">
+          <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
             {/* Nombre del proceso */}
             <div className="mb-8">
               <h1
@@ -340,7 +376,7 @@ export function ProvinciaPage() {
           </main>
 
           <footer
-            className="border-t flex items-center justify-end px-8"
+            className="border-t flex items-center justify-end px-4 sm:px-8"
             style={{ height: 72, borderColor: 'rgba(212,175,55,0.15)' }}
           >
             <img

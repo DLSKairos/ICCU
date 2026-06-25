@@ -81,7 +81,7 @@ export function SubactivityCard({ metrics, process }: SubactivityCardProps) {
           className="px-4 pb-4 pt-3 flex flex-col gap-3"
           style={{ borderTop: '1px solid rgba(19,65,116,0.10)' }}
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { label: 'Ejecutado', value: metrics.executed },
               { label: 'Planeado', value: metrics.denominator },

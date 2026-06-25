@@ -26,15 +26,18 @@ export function MapaPage() {
       style={{ background: '#134174' }}
     >
       {/* Header — logo izq | título centro | "Talento Humano" der */}
-      <header className="flex items-center justify-between px-8 py-3 shrink-0">
-        <IccuLogo height={130} />
+      <header className="flex items-center justify-between px-4 sm:px-8 py-2 sm:py-3 shrink-0 gap-2">
+        {/* Logo — oculto en mobile para no saturar el header */}
+        <div className="hidden sm:block shrink-0">
+          <IccuLogo height={100} />
+        </div>
 
-        <div className="flex flex-col items-center gap-0.5">
+        <div className="flex flex-col items-center gap-0.5 flex-1 sm:flex-none">
           <h2
             className="shimmer-text"
             style={{
               fontFamily: "'Antonio', sans-serif",
-              fontSize: 'clamp(2.4rem, 5vw, 4.5rem)',
+              fontSize: 'clamp(1.8rem, 5vw, 4.5rem)',
               fontWeight: 700,
               letterSpacing: '0.06em',
               lineHeight: 1,
@@ -45,7 +48,7 @@ export function MapaPage() {
           <p
             style={{
               fontFamily: "'Roboto Condensed', sans-serif",
-              fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+              fontSize: 'clamp(0.85rem, 2vw, 1.5rem)',
               color: 'rgba(255,255,255,0.45)',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
@@ -56,7 +59,7 @@ export function MapaPage() {
         </div>
 
         <span
-          className="shimmer-text"
+          className="shimmer-text hidden sm:block shrink-0"
           style={{
             fontFamily: "'Antonio', sans-serif",
             fontSize: 'clamp(1rem, 1.8vw, 1.5rem)',
@@ -77,7 +80,7 @@ export function MapaPage() {
       </main>
 
       {/* Footer — botón admin izq | logo der */}
-      <footer className="flex items-center justify-between px-8 pb-4 shrink-0">
+      <footer className="flex items-center justify-between px-4 sm:px-8 pb-3 sm:pb-4 shrink-0">
         <button
           onClick={() => navigate('/admin')}
           title="Acceso administrador"
@@ -109,7 +112,7 @@ export function MapaPage() {
         <img
           src="/logos/logo_completo.png"
           alt="ICCU"
-          style={{ height: 72, width: 'auto', objectFit: 'contain', opacity: 0.75 }}
+          style={{ height: 56, width: 'auto', objectFit: 'contain', opacity: 0.75 }}
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
         />
       </footer>
