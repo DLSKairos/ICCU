@@ -619,7 +619,7 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
                         fontSize: 13,
                       }}
                       cursor={{ fill: 'rgba(19,65,116,0.06)' }}
-                      formatter={(value: number, name: string) => [
+                      formatter={(value, name) => [
                         value,
                         name === 'cases' ? 'Casos' : 'Días',
                       ]}
@@ -674,7 +674,7 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
                         fontSize: 13,
                       }}
                       cursor={{ fill: 'rgba(0,135,207,0.06)' }}
-                      formatter={(value: number) => [value, 'Casos']}
+                      formatter={(value) => [value, 'Casos']}
                     />
                     <Bar dataKey="cases" fill="#0087CF" radius={[4, 4, 0, 0]} name="cases" maxBarSize={56} />
                   </BarChart>
