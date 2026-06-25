@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AusentismoDashboard } from '../components/dashboard/AusentismoDashboard';
 import { HistoricalBar } from '../components/dashboard/HistoricalBar';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { PeriodSelector } from '../components/dashboard/PeriodSelector';
@@ -97,7 +98,8 @@ export function ProvinciaPage() {
     );
   }
 
-  const metrics = calcProcessMetrics(process, period, TODAY);
+  const isAusentismo = process.type === 'AUSENTISMO';
+  const metrics = isAusentismo ? null : calcProcessMetrics(process, period, TODAY);
 
   return (
     <div className="min-h-screen" style={{ background: 'radial-gradient(ellipse at 15% 25%, rgba(0,135,207,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 75%, rgba(0,180,166,0.12) 0%, transparent 55%), #134174' }}>
@@ -247,82 +249,94 @@ export function ProvinciaPage() {
               </p>
             </div>
 
-            {/* Selector de período */}
-            <div className="mb-8">
-              <PeriodSelector value={period} onChange={setPeriod} />
-            </div>
+            {isAusentismo ? (
+              /* ── Vista de ausentismo ── */
+              <AusentismoDashboard
+                processId={process.id}
+                processName={process.name}
+                processDescription={process.description}
+              />
+            ) : (
+              /* ── Vista estándar de métricas ── */
+              <>
+                {/* Selector de período */}
+                <div className="mb-8">
+                  <PeriodSelector value={period} onChange={setPeriod} />
+                </div>
 
-            {/* Tarjetas de métricas */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <MetricCard
-                label="Avance del período"
-                value={`${metrics.percentage}%`}
-                subtitle={`${metrics.executed} de ${metrics.denominator} actividades`}
-                highlight
-              />
-              <MetricCard
-                label="Total anual ejecutado"
-                value={`${metrics.annualExecuted}`}
-                subtitle={`de ${metrics.annualTotal} planeadas`}
-              />
-              <MetricCard
-                label="Participantes"
-                value={`${metrics.attendeesInPeriod}`}
-                subtitle="en el período seleccionado"
-              />
-              <MetricCard
-                label="Subactividades"
-                value={`${process.subactivities.length}`}
-                subtitle="procesos activos"
-              />
-            </div>
-
-            {/* Gráficas */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-              <ProgressPie
-                executed={metrics.executed}
-                denominator={metrics.denominator}
-                label={`Avance ${period}`}
-              />
-              <SubactivitiesBar subactivities={metrics.subactivities} />
-            </div>
-
-            {/* Histórico */}
-            <div className="mb-10">
-              <SectionTitle>Histórico de cumplimiento</SectionTitle>
-              <HistoricalBar
-                data={process.historicalPercentages}
-                currentYearPercentage={
-                  calcProcessMetrics(process, 'anual', TODAY).percentage
-                }
-              />
-            </div>
-
-            {/* Subactividades */}
-            <div className="mb-10">
-              <SectionTitle>Subactividades</SectionTitle>
-              <div className="flex flex-col gap-3">
-                {metrics.subactivities.map(sub => (
-                  <SubactivityCard
-                    key={sub.subactivityId}
-                    metrics={sub}
-                    process={process}
+                {/* Tarjetas de métricas */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                  <MetricCard
+                    label="Avance del período"
+                    value={`${metrics!.percentage}%`}
+                    subtitle={`${metrics!.executed} de ${metrics!.denominator} actividades`}
+                    highlight
                   />
-                ))}
-              </div>
-            </div>
+                  <MetricCard
+                    label="Total anual ejecutado"
+                    value={`${metrics!.annualExecuted}`}
+                    subtitle={`de ${metrics!.annualTotal} planeadas`}
+                  />
+                  <MetricCard
+                    label="Participantes"
+                    value={`${metrics!.attendeesInPeriod}`}
+                    subtitle="en el período seleccionado"
+                  />
+                  <MetricCard
+                    label="Subactividades"
+                    value={`${process.subactivities.length}`}
+                    subtitle="procesos activos"
+                  />
+                </div>
 
-            {/* Línea de tiempo */}
-            <div className="mb-10">
-              <SectionTitle>Línea de tiempo</SectionTitle>
-              <Timeline process={process} />
-            </div>
+                {/* Gráficas */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                  <ProgressPie
+                    executed={metrics!.executed}
+                    denominator={metrics!.denominator}
+                    label={`Avance ${period}`}
+                  />
+                  <SubactivitiesBar subactivities={metrics!.subactivities} />
+                </div>
 
-            {/* Galería */}
-            <div className="mb-10">
-              <SectionTitle>Galería fotográfica</SectionTitle>
-              <PhotoGallery process={process} />
-            </div>
+                {/* Histórico */}
+                <div className="mb-10">
+                  <SectionTitle>Histórico de cumplimiento</SectionTitle>
+                  <HistoricalBar
+                    data={process.historicalPercentages}
+                    currentYearPercentage={
+                      calcProcessMetrics(process, 'anual', TODAY).percentage
+                    }
+                  />
+                </div>
+
+                {/* Subactividades */}
+                <div className="mb-10">
+                  <SectionTitle>Subactividades</SectionTitle>
+                  <div className="flex flex-col gap-3">
+                    {metrics!.subactivities.map(sub => (
+                      <SubactivityCard
+                        key={sub.subactivityId}
+                        metrics={sub}
+                        process={process}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Línea de tiempo */}
+                <div className="mb-10">
+                  <SectionTitle>Línea de tiempo</SectionTitle>
+                  <Timeline process={process} />
+                </div>
+
+                {/* Galería */}
+                <div className="mb-10">
+                  <SectionTitle>Galería fotográfica</SectionTitle>
+                  <PhotoGallery process={process} />
+                </div>
+              </>
+            )}
           </main>
 
           <footer

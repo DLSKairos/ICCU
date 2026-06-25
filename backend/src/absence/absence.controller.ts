@@ -28,6 +28,22 @@ export class AbsenceController {
     return this.absenceService.searchEmployees(q ?? '');
   }
 
+  @Get('stats')
+  getStats(
+    @Query('processId') processId: string,
+    @Query('period') period: string,
+  ) {
+    return this.absenceService.getStats(processId, period);
+  }
+
+  @Get('person/:identification')
+  getPersonStats(
+    @Param('identification') identification: string,
+    @Query('processId') processId: string,
+  ) {
+    return this.absenceService.getPersonStats(identification, processId);
+  }
+
   @Get('process/:processId')
   findByProcess(
     @Param('processId') processId: string,

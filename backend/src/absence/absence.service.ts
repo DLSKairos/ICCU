@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateAbsenceDto } from './dto/create-absence.dto.js';
@@ -89,6 +90,174 @@ export class AbsenceService {
       orderBy: [{ identification: 'asc' }, { employeeName: 'asc' }],
       take: 10,
     });
+  }
+
+  // ─── Stats ──────────────────────────────────────────────────────────────────
+
+  async getStats(processId: string, period: string) {
+    const VALID_PERIODS = ['semanal', 'mensual', 'trimestral', 'anual'] as const;
+    if (!VALID_PERIODS.includes(period as (typeof VALID_PERIODS)[number])) {
+      throw new BadRequestException(
+        `El período '${period}' no es válido. Use: semanal, mensual, trimestral o anual`,
+      );
+    }
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    let from: Date;
+
+    if (period === 'semanal') {
+      from = new Date(today);
+      from.setDate(today.getDate() - 7);
+      from.setHours(0, 0, 0, 0);
+    } else if (period === 'mensual') {
+      from = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else if (period === 'trimestral') {
+      from = new Date(today);
+      from.setMonth(today.getMonth() - 3);
+      from.setHours(0, 0, 0, 0);
+    } else {
+      // anual
+      from = new Date(today.getFullYear(), 0, 1);
+    }
+
+    const records = await this.prisma.absenceRecord.findMany({
+      where: {
+        processId,
+        startDate: { gte: from, lte: today },
+      },
+    });
+
+    // Summary
+    const totalCases = records.length;
+    const totalDays = records.reduce((sum, r) => sum + r.days, 0);
+
+    // By department
+    const deptMap = new Map<string, { cases: number; days: number }>();
+    for (const r of records) {
+      const entry = deptMap.get(r.department) ?? { cases: 0, days: 0 };
+      entry.cases += 1;
+      entry.days += r.days;
+      deptMap.set(r.department, entry);
+    }
+    const byDepartment = Array.from(deptMap.entries())
+      .map(([department, v]) => ({ department, cases: v.cases, days: v.days }))
+      .sort((a, b) => b.cases - a.cases);
+
+    // By start weekday
+    const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const weekdayMap = new Map<number, number>();
+    for (const r of records) {
+      const dayIndex = r.startDate.getDay();
+      weekdayMap.set(dayIndex, (weekdayMap.get(dayIndex) ?? 0) + 1);
+    }
+    const byStartWeekday = Array.from(weekdayMap.entries())
+      .map(([dayIndex, cases]) => ({ weekday: WEEKDAYS[dayIndex], dayIndex, cases }))
+      .sort((a, b) => b.cases - a.cases);
+
+    // Top concepts
+    const conceptKey = (r: { diagnosticCode: string | null; diagnosticConcept: string | null }) =>
+      `${r.diagnosticCode ?? ''}||${r.diagnosticConcept ?? ''}`;
+    const conceptMap = new Map<string, { diagnosticCode: string | null; diagnosticConcept: string | null; cases: number }>();
+    for (const r of records) {
+      const key = conceptKey(r);
+      const entry = conceptMap.get(key) ?? {
+        diagnosticCode: r.diagnosticCode,
+        diagnosticConcept: r.diagnosticConcept,
+        cases: 0,
+      };
+      entry.cases += 1;
+      conceptMap.set(key, entry);
+    }
+    const topConcepts = Array.from(conceptMap.values())
+      .sort((a, b) => b.cases - a.cases)
+      .slice(0, 10);
+
+    const toDateStr = (d: Date) => d.toISOString().split('T')[0];
+
+    return {
+      period,
+      dateRange: { from: toDateStr(from), to: toDateStr(today) },
+      summary: { totalCases, totalDays },
+      byDepartment,
+      byStartWeekday,
+      topConcepts,
+    };
+  }
+
+  // ─── Person stats ────────────────────────────────────────────────────────────
+
+  async getPersonStats(identification: string, processId: string) {
+    const currentYear = new Date().getFullYear();
+
+    const records = await this.prisma.absenceRecord.findMany({
+      where: { identification, processId, year: currentYear },
+      orderBy: { startDate: 'desc' },
+    });
+
+    if (records.length === 0) {
+      throw new NotFoundException(
+        'No se encontraron registros para esta persona en el año actual',
+      );
+    }
+
+    const currentYearCases = records.length;
+    const currentYearDays = records.reduce((sum, r) => sum + r.days, 0);
+
+    // Use the most recent record for identifying info
+    const latest = records[0];
+
+    // By start weekday
+    const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const weekdayMap = new Map<number, number>();
+    for (const r of records) {
+      const dayIndex = r.startDate.getDay();
+      weekdayMap.set(dayIndex, (weekdayMap.get(dayIndex) ?? 0) + 1);
+    }
+    const byStartWeekday = Array.from(weekdayMap.entries())
+      .map(([dayIndex, cases]) => ({ weekday: WEEKDAYS[dayIndex], dayIndex, cases }))
+      .sort((a, b) => b.cases - a.cases);
+
+    // By diagnostic
+    const conceptKey = (r: { diagnosticCode: string | null; diagnosticConcept: string | null }) =>
+      `${r.diagnosticCode ?? ''}||${r.diagnosticConcept ?? ''}`;
+    const diagMap = new Map<string, { diagnosticCode: string | null; diagnosticConcept: string | null; cases: number }>();
+    for (const r of records) {
+      const key = conceptKey(r);
+      const entry = diagMap.get(key) ?? {
+        diagnosticCode: r.diagnosticCode,
+        diagnosticConcept: r.diagnosticConcept,
+        cases: 0,
+      };
+      entry.cases += 1;
+      diagMap.set(key, entry);
+    }
+    const byDiagnostic = Array.from(diagMap.values()).sort((a, b) => b.cases - a.cases);
+
+    const toDateStr = (d: Date) => d.toISOString().split('T')[0];
+
+    const absences = records.map((r) => ({
+      id: r.id,
+      startDate: toDateStr(r.startDate),
+      endDate: toDateStr(r.endDate),
+      requestDate: toDateStr(r.requestDate),
+      days: r.days,
+      incapacityType: r.incapacityType,
+      diagnosticCode: r.diagnosticCode,
+      diagnosticConcept: r.diagnosticConcept,
+    }));
+
+    return {
+      identification: latest.identification,
+      employeeName: latest.employeeName,
+      department: latest.department,
+      currentYearCases,
+      currentYearDays,
+      byStartWeekday,
+      byDiagnostic,
+      absences,
+    };
   }
 
   // ─── CIE-10 search (catálogo local BD) ──────────────────────────────────────

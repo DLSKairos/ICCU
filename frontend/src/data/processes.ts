@@ -34,6 +34,7 @@ export interface Process {
   subactivities: Subactivity[];
   activities: Activity[];
   historicalPercentages: HistoricalYear[];
+  type?: 'STANDARD' | 'AUSENTISMO';
 }
 
 // Mapeo 1:1 entre el ID de la provincia SVG y el ID del proceso
