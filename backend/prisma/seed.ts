@@ -44,7 +44,7 @@ const HISTORICAL: Array<{ processId: string; year: number; percentage: number }>
 async function main() {
   console.log('Iniciando seed ICCU...');
 
-  // Limpiar datos preservando solo los Procesos (idempotente para fresh install)
+  // Limpiar todos los datos dependientes antes de recrear procesos
   await prisma.$transaction([
     prisma.activityPhoto.deleteMany(),
     prisma.activity.deleteMany(),
@@ -53,11 +53,11 @@ async function main() {
     prisma.annualTarget.deleteMany(),
     prisma.subactivity.deleteMany(),
     prisma.historicalPercentage.deleteMany(),
+    prisma.absenceRecord.deleteMany(),
   ]);
 
-  // Eliminar procesos que ya no están en la lista (limpieza de obsoletos)
-  const knownIds = PROCESSES.map(p => p.id);
-  await prisma.process.deleteMany({ where: { id: { notIn: knownIds } } });
+  // Borrar todos los procesos para permitir recrearlos con IDs limpios
+  await prisma.process.deleteMany();
 
   // Upsert procesos
   for (const p of PROCESSES) {
