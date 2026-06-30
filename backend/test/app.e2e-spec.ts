@@ -154,7 +154,7 @@ describe('ICCU Backend (e2e)', () => {
     it('GET /api/processes → 200 + array de procesos', async () => {
       mockPrisma.process.findMany.mockResolvedValue([
         {
-          id: 'pausas-activas',
+          id: 'fechas-especiales',
           name: 'Pausas Activas',
           description: 'Sesiones de pausas activas',
           provinceId: 'bogota',
@@ -174,13 +174,13 @@ describe('ICCU Backend (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.data[0]).toHaveProperty('id', 'pausas-activas');
+      expect(res.body.data[0]).toHaveProperty('id', 'fechas-especiales');
       expect(res.body.data[0]).toHaveProperty('progress');
     });
 
     it('GET /api/processes/:id → 200 + proceso con métricas', async () => {
       mockPrisma.process.findUnique.mockResolvedValue({
-        id: 'pausas-activas',
+        id: 'fechas-especiales',
         name: 'Pausas Activas',
         description: 'Desc',
         provinceId: 'bogota',
@@ -196,11 +196,11 @@ describe('ICCU Backend (e2e)', () => {
       });
 
       const res = await request(app.getHttpServer()).get(
-        '/api/processes/pausas-activas',
+        '/api/processes/fechas-especiales',
       );
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toHaveProperty('id', 'pausas-activas');
+      expect(res.body.data).toHaveProperty('id', 'fechas-especiales');
       expect(res.body.data).toHaveProperty('progress', 25);
       expect(res.body.data).toHaveProperty('subactivities');
       expect(Array.isArray(res.body.data.subactivities)).toBe(true);
@@ -235,7 +235,7 @@ describe('ICCU Backend (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/activities')
         .send({
-          processId: 'pausas-activas',
+          processId: 'fechas-especiales',
           subactivityId: 'pa-sesiones',
           title: 'Sesión',
           description: 'Descripción',

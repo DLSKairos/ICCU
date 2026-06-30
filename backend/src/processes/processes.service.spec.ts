@@ -31,7 +31,7 @@ describe('ProcessesService', () => {
     it('should return processes mapped to ProcessSummary array', async () => {
       mockPrisma.process.findMany.mockResolvedValue([
         {
-          id: 'pausas-activas',
+          id: 'fechas-especiales',
           name: 'Pausas Activas',
           description: 'Desc',
           provinceId: 'bogota',
@@ -43,7 +43,7 @@ describe('ProcessesService', () => {
       const result = await service.findAll(2025);
 
       expect(Array.isArray(result)).toBe(true);
-      expect(result[0].id).toBe('pausas-activas');
+      expect(result[0].id).toBe('fechas-especiales');
     });
 
     it('should calculate progress as 25% when target=156 and executed=39', async () => {
@@ -173,7 +173,7 @@ describe('ProcessesService', () => {
   describe('findOne(id, year)', () => {
     it('should return a ProcessDetail with subactivities and historicalPercentages', async () => {
       mockPrisma.process.findUnique.mockResolvedValue({
-        id: 'pausas-activas',
+        id: 'fechas-especiales',
         name: 'Pausas Activas',
         description: 'Desc pausas',
         provinceId: 'bogota',
@@ -189,9 +189,9 @@ describe('ProcessesService', () => {
         historicalPercentages: [{ year: 2023, percentage: 75 }],
       });
 
-      const result = await service.findOne('pausas-activas', 2025);
+      const result = await service.findOne('fechas-especiales', 2025);
 
-      expect(result.id).toBe('pausas-activas');
+      expect(result.id).toBe('fechas-especiales');
       expect(result.subactivities).toHaveLength(1);
       expect(result.subactivities[0].annualTarget).toBe(100);
       expect(result.subactivities[0].executions).toHaveLength(1);

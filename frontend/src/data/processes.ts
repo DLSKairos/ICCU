@@ -39,21 +39,21 @@ export interface Process {
 
 // Mapeo 1:1 entre el ID de la provincia SVG y el ID del proceso
 export const PROVINCE_TO_PROCESS: Record<string, string> = {
-  'bajo-magdalena':    'pausas-activas',
-  'ubate':             'cumpleanos',
-  'almeidas':          'lunes-miercoles',
-  'guavio':            'dia-salud',
-  'medina':            'sst',
-  'rionegro':          'clima-organizacional',
-  'magdalena-centro':  'capacitacion',
-  'gualiva':           'seleccion',
-  'sabana-centro':     'evaluacion',
-  'sabana-occidente':  'seguridad-industrial',
+  'bajo-magdalena':    'fechas-especiales',
+  'ubate':             'feria-servicios',
+  'almeidas':          'salud-mental',
+  'guavio':            'actividades-deportivas',
+  'medina':            'dia-salud-sst',
+  'rionegro':          'pre-pensionados',
+  'magdalena-centro':  'clima-organizacional',
+  'gualiva':           'teletrabajo',
+  'sabana-centro':     'capacitaciones',
+  'sabana-occidente':  'atencion-psicosocial',
   'soacha':            'medicina-preventiva',
-  'tequendama':        'recreacion',
-  'alto-magdalena':    'apoyo-social',
-  'sumapaz':           'gestion-conocimiento',
-  'nueva-provincia':   'cultura-organizacional',
+  'tequendama':        'copasst',
+  'alto-magdalena':    'comite-convivencia',
+  'sumapaz':           'atencion-emergencias',
+  'nueva-provincia':   'seguridad-vial',
 };
 
 export const PROCESS_TO_PROVINCE: Record<string, string> = Object.fromEntries(

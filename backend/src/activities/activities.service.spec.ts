@@ -134,7 +134,7 @@ describe('ActivitiesService', () => {
 
   describe('create(dto)', () => {
     const validDto: CreateActivityDto = {
-      processId: 'pausas-activas',
+      processId: 'fechas-especiales',
       subactivityId: 'pa-sesiones',
       title: 'Sesión de pausas',
       description: 'Descripción de la sesión',
@@ -145,10 +145,10 @@ describe('ActivitiesService', () => {
     };
 
     it('should call prisma.activity.create with correct data', async () => {
-      mockPrisma.process.findUnique.mockResolvedValue({ id: 'pausas-activas' });
+      mockPrisma.process.findUnique.mockResolvedValue({ id: 'fechas-especiales' });
       mockPrisma.subactivity.findUnique.mockResolvedValue({
         id: 'pa-sesiones',
-        processId: 'pausas-activas',
+        processId: 'fechas-especiales',
       });
       mockPrisma.activity.create.mockResolvedValue({
         id: 'act-uuid',
@@ -162,7 +162,7 @@ describe('ActivitiesService', () => {
       expect(mockPrisma.activity.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            processId: 'pausas-activas',
+            processId: 'fechas-especiales',
             subactivityId: 'pa-sesiones',
             title: 'Sesión de pausas',
             attendees: 30,
@@ -180,7 +180,7 @@ describe('ActivitiesService', () => {
     });
 
     it('should throw BadRequestException when subactivity does not belong to process', async () => {
-      mockPrisma.process.findUnique.mockResolvedValue({ id: 'pausas-activas' });
+      mockPrisma.process.findUnique.mockResolvedValue({ id: 'fechas-especiales' });
       mockPrisma.subactivity.findUnique.mockResolvedValue({
         id: 'pa-sesiones',
         processId: 'otro-proceso', // pertenece a otro proceso
@@ -191,17 +191,17 @@ describe('ActivitiesService', () => {
     });
 
     it('should throw BadRequestException when subactivity does not exist', async () => {
-      mockPrisma.process.findUnique.mockResolvedValue({ id: 'pausas-activas' });
+      mockPrisma.process.findUnique.mockResolvedValue({ id: 'fechas-especiales' });
       mockPrisma.subactivity.findUnique.mockResolvedValue(null);
 
       await expect(service.create(validDto)).rejects.toThrow(BadRequestException);
     });
 
     it('should derive year from date field', async () => {
-      mockPrisma.process.findUnique.mockResolvedValue({ id: 'pausas-activas' });
+      mockPrisma.process.findUnique.mockResolvedValue({ id: 'fechas-especiales' });
       mockPrisma.subactivity.findUnique.mockResolvedValue({
         id: 'pa-sesiones',
-        processId: 'pausas-activas',
+        processId: 'fechas-especiales',
       });
       mockPrisma.activity.create.mockResolvedValue({
         id: 'act-uuid',
