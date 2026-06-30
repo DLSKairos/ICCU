@@ -127,7 +127,7 @@ export function MapaPage() {
           WebkitBackdropFilter: 'blur(8px)',
         }}
       >
-        <nav className="overflow-y-auto py-2 h-full">
+        <nav className="overflow-y-auto py-2 pb-28 h-full">
           {processes.map(p => (
             <div key={p.id} style={{ padding: '2px 8px' }}>
               <button

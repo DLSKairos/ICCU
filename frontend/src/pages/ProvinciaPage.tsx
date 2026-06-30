@@ -215,7 +215,7 @@ export function ProvinciaPage() {
             </div>
 
             {/* Lista de procesos */}
-            <nav className="overflow-y-auto py-2" style={{ height: 'calc(100% - 40px)' }}>
+            <nav className="overflow-y-auto py-2 pb-14" style={{ height: 'calc(100% - 40px)' }}>
               {allProcesses.map(p => {
                 const isActive = p.id === id;
                 return (
