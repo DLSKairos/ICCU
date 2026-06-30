@@ -1,8 +1,66 @@
+import { useEffect, useRef, useState } from 'react';
 import { useMapTransition } from '../hooks/useMapTransition';
+import { WakingUpScreen } from '../components/WakingUpScreen';
+
+type BackendState = 'checking' | 'awake' | 'sleeping' | 'ready';
 
 export function IntroPage() {
   const { state, trigger } = useMapTransition();
   const isZooming = state === 'zooming';
+  const devForce = new URLSearchParams(window.location.search).get('waking') as BackendState | null;
+  const [backendState, setBackendState] = useState<BackendState>(devForce ?? 'checking');
+  const triggerRef = useRef(trigger);
+  useEffect(() => { triggerRef.current = trigger; }, [trigger]);
+
+  useEffect(() => {
+    if (devForce) return;
+    let cancelled = false;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+    const ping = async (timeoutMs: number): Promise<boolean> => {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL}/health`, { signal: controller.signal });
+        clearTimeout(t);
+        return true;
+      } catch {
+        clearTimeout(t);
+        return false;
+      }
+    };
+
+    (async () => {
+      const awake = await ping(3000);
+      if (cancelled) return;
+
+      if (awake) {
+        setBackendState('awake');
+        return;
+      }
+
+      setBackendState('sleeping');
+
+      pollInterval = setInterval(async () => {
+        const ok = await ping(8000);
+        if (ok && !cancelled) {
+          clearInterval(pollInterval!);
+          pollInterval = null;
+          setBackendState('ready');
+          setTimeout(() => { if (!cancelled) triggerRef.current(); }, 1500);
+        }
+      }, 5000);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, []);
+
+  if (backendState === 'sleeping' || backendState === 'ready') {
+    return <WakingUpScreen isReady={backendState === 'ready'} />;
+  }
 
   return (
     <div
