@@ -10,6 +10,7 @@ interface PeriodSelectorProps {
 
 export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
   return (
+    <div className="w-full overflow-x-auto">
     <div
       className="flex gap-0.5 p-1 w-fit"
       style={{
@@ -25,7 +26,7 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
         <button
           key={p}
           onClick={() => onChange(p)}
-          className="px-5 py-2 cursor-pointer transition-all duration-200"
+          className="px-2.5 sm:px-5 py-1.5 sm:py-2 cursor-pointer transition-all duration-200 whitespace-nowrap"
           style={{
             fontFamily: "'Roboto Condensed', sans-serif",
             fontSize: 12,
@@ -46,6 +47,7 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
           {PERIOD_LABELS[p]}
         </button>
       ))}
+    </div>
     </div>
   );
 }
