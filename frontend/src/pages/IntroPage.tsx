@@ -7,13 +7,11 @@ type BackendState = 'checking' | 'awake' | 'sleeping' | 'ready';
 export function IntroPage() {
   const { state, trigger } = useMapTransition();
   const isZooming = state === 'zooming';
-  const devForce = new URLSearchParams(window.location.search).get('waking') as BackendState | null;
-  const [backendState, setBackendState] = useState<BackendState>(devForce ?? 'checking');
+  const [backendState, setBackendState] = useState<BackendState>('checking');
   const triggerRef = useRef(trigger);
   useEffect(() => { triggerRef.current = trigger; }, [trigger]);
 
   useEffect(() => {
-    if (devForce) return;
     let cancelled = false;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
 
