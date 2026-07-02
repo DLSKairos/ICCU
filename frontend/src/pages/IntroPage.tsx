@@ -1,70 +1,78 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMapTransition } from '../hooks/useMapTransition';
 import { WakingUpScreen } from '../components/WakingUpScreen';
 
-type BackendState = 'checking' | 'awake' | 'sleeping' | 'ready';
+// Flujo de la portada:
+//  intro  → esperando el click de "continuar"
+//  waking → se hizo click: el ping despierta el backend y mostramos BridgeGame
+//           + polling hasta que responda (en Render free siempre está dormido)
+//  ready  → el backend respondió → CompletionScreen y luego zoom al mapa
+type Flow = 'intro' | 'waking' | 'ready';
 
 export function IntroPage() {
   const { state, trigger } = useMapTransition();
   const isZooming = state === 'zooming';
-  const [backendState, setBackendState] = useState<BackendState>('checking');
+  const [flow, setFlow] = useState<Flow>('intro');
   const triggerRef = useRef(trigger);
   useEffect(() => { triggerRef.current = trigger; }, [trigger]);
 
-  useEffect(() => {
-    let cancelled = false;
-    let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-    const ping = async (timeoutMs: number): Promise<boolean> => {
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        await fetch(`${import.meta.env.VITE_API_URL}/health`, { signal: controller.signal });
-        clearTimeout(t);
-        return true;
-      } catch {
-        clearTimeout(t);
-        return false;
-      }
-    };
-
-    (async () => {
-      const awake = await ping(3000);
-      if (cancelled) return;
-
-      if (awake) {
-        setBackendState('awake');
-        return;
-      }
-
-      setBackendState('sleeping');
-
-      pollInterval = setInterval(async () => {
-        const ok = await ping(8000);
-        if (ok && !cancelled) {
-          clearInterval(pollInterval!);
-          pollInterval = null;
-          setBackendState('ready');
-          setTimeout(() => { if (!cancelled) triggerRef.current(); }, 1500);
-        }
-      }, 5000);
-    })();
-
-    return () => {
-      cancelled = true;
-      if (pollInterval) clearInterval(pollInterval);
-    };
+  // Un ping cuenta como "despierto" SOLO con respuesta 2xx.
+  // Render devuelve 502/503 mientras arranca; eso no debe pasar como despierto.
+  const ping = useCallback(async (timeoutMs: number): Promise<boolean> => {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/health`, {
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(t);
+    }
   }, []);
 
-  if (backendState === 'sleeping' || backendState === 'ready') {
-    return <WakingUpScreen isReady={backendState === 'ready'} />;
+  // El usuario dio "click para continuar": mostramos el juego y arrancamos
+  // el ping que despierta el backend. Nunca vamos al mapa con el backend dormido.
+  const handleContinue = useCallback(() => {
+    setFlow(f => (f === 'intro' ? 'waking' : f));
+  }, []);
+
+  // waking: BridgeGame en pantalla mientras hacemos polling hasta que despierte.
+  // El primer ping ya arranca el cold start; si por casualidad estuviera despierto
+  // (alguien entró hace <15 min) responde en <1s y saltamos al mapa enseguida.
+  useEffect(() => {
+    if (flow !== 'waking') return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const poll = async () => {
+      const up = await ping(8000);
+      if (cancelled) return;
+      if (up) { setFlow('ready'); return; }
+      timer = setTimeout(poll, 3000);
+    };
+    poll();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [flow, ping]);
+
+  // ready: dejamos ver el CompletionScreen un momento y luego zoom al mapa.
+  useEffect(() => {
+    if (flow !== 'ready') return;
+    const t = setTimeout(() => triggerRef.current(), 1500);
+    return () => clearTimeout(t);
+  }, [flow]);
+
+  if (flow === 'waking' || flow === 'ready') {
+    return <WakingUpScreen isReady={flow === 'ready'} />;
   }
 
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
       style={{ background: '#134174', cursor: 'pointer' }}
-      onClick={trigger}
+      onClick={handleContinue}
     >
       {/* Logo ICCU — esquina superior */}
       <div
@@ -134,7 +142,7 @@ export function IntroPage() {
         />
       )}
 
-      {/* Chevron pulsante */}
+      {/* Chevron pulsante / estado de conexión */}
       <div
         className="absolute bottom-10 flex flex-col items-center gap-2 transition-opacity duration-300"
         style={{ opacity: isZooming ? 0 : 1 }}

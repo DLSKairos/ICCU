@@ -45,6 +45,13 @@ export default defineConfig({
         skipWaiting: true,
         runtimeCaching: [
           {
+            // El health-check SIEMPRE debe ir a la red: si se cachea, un 200
+            // viejo hace creer que el backend está despierto cuando aún duerme.
+            // Debe ir antes de la regla /api/ (Workbox usa la primera coincidencia).
+            urlPattern: /\/api\/health/,
+            handler: 'NetworkOnly',
+          },
+          {
             urlPattern: /\/api\//,
             handler: 'NetworkFirst',
             options: {
