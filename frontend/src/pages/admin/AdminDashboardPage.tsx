@@ -11,7 +11,7 @@ interface AdminProcess {
   description?: string;
   type?: string;
   isParametrized?: boolean;
-  percentage?: number;
+  progress?: number;
   subactivities?: Array<{ isLocked?: boolean }>;
   [key: string]: unknown;
 }
@@ -25,8 +25,8 @@ function getParametrizationStatus(proc: AdminProcess): boolean {
 }
 
 function getPercentage(proc: AdminProcess): number {
-  if (typeof proc.percentage === 'number') return proc.percentage;
-  return 0;
+  const p = typeof proc.progress === 'number' ? proc.progress : 0;
+  return Number.isFinite(p) ? p : 0;
 }
 
 // ── Skeleton card mientras carga ──────────────────────────────────────────────
