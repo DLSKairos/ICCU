@@ -86,19 +86,36 @@ export class ActivitiesService {
       );
     }
 
-    return this.prisma.activity.create({
-      data: {
-        processId: dto.processId,
-        subactivityId: dto.subactivityId,
-        year,
-        title: dto.title,
-        description: dto.description ?? '',
-        message: dto.message ?? '',
-        date,
-        attendees: dto.attendees,
-        departments: dto.departments,
-      },
-      include: { photos: true },
+    // Registrar la actividad (narrativa) y su ejecución (cuantitativa, count=1)
+    // de forma atómica: cada actividad registrada cuenta como una ejecución
+    // hacia la meta de su subactividad, que es lo que alimenta el avance.
+    return this.prisma.$transaction(async (tx) => {
+      const activity = await tx.activity.create({
+        data: {
+          processId: dto.processId,
+          subactivityId: dto.subactivityId,
+          year,
+          title: dto.title,
+          description: dto.description ?? '',
+          message: dto.message ?? '',
+          date,
+          attendees: dto.attendees,
+          departments: dto.departments,
+        },
+        include: { photos: true },
+      });
+
+      await tx.execution.create({
+        data: {
+          subactivityId: dto.subactivityId,
+          activityId: activity.id,
+          year,
+          date,
+          count: 1,
+        },
+      });
+
+      return activity;
     });
   }
 

@@ -87,12 +87,17 @@ model AnnualTarget {
 model Execution {
   id            String   @id @default(uuid())
   subactivityId String
+  activityId    String?  @unique
   year          Int
   date          DateTime @db.Date
   count         Int      @default(1)
   createdAt     DateTime @default(now())
 
   subactivity Subactivity @relation(fields: [subactivityId], references: [id])
+  // Ejecución generada automáticamente al registrar una Activity. Nullable
+  // porque también puede crearse una ejecución suelta. Cascade: al borrar la
+  // actividad, su ejecución (y por tanto su aporte al avance) se elimina.
+  activity    Activity?   @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
   @@index([subactivityId, year])
   @@index([year])
@@ -130,6 +135,7 @@ model Activity {
   process     Process         @relation(fields: [processId], references: [id])
   subactivity Subactivity     @relation(fields: [subactivityId], references: [id])
   photos      ActivityPhoto[]
+  execution   Execution?
 
   @@index([processId, year])
   @@index([subactivityId])
