@@ -4,11 +4,14 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('ExceptionFilter');
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -35,6 +38,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           error = body['error'];
         }
       }
+    } else {
+      // Excepción no controlada (ej. error de Cloudinary/Prisma): loguear el stack
+      // completo para que aparezca en los logs del servidor (Render) y no se pierda.
+      this.logger.error(
+        `Excepción no controlada en ${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     }
 
     response.status(status).json({

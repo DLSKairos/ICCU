@@ -1337,10 +1337,17 @@ export default function AdminProvinciaPage() {
       setActPhotosPreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       loadProcess();
-    } catch {
+    } catch (err) {
       if (progressInterval) clearInterval(progressInterval);
       setUploadProgress(0);
-      setCreateError('Error al registrar la actividad. Verifica los datos e intenta de nuevo.');
+      // Mostrar el mensaje real del backend si viene (ej. error de Cloudinary),
+      // en vez de un mensaje genérico que oculta la causa.
+      const backendMsg = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+      setCreateError(
+        backendMsg ??
+          'Error al registrar la actividad. Verifica los datos e intenta de nuevo.',
+      );
     } finally {
       setCreatingActivity(false);
       setTimeout(() => setUploadProgress(0), 1500);

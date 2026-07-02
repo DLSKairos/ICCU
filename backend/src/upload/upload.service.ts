@@ -2,6 +2,8 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -9,6 +11,8 @@ import { Readable } from 'stream';
 
 @Injectable()
 export class UploadService {
+  private readonly logger = new Logger('UploadService');
+
   constructor(private readonly prisma: PrismaService) {}
 
   async uploadPhoto(
@@ -80,6 +84,16 @@ export class UploadService {
     file: Express.Multer.File,
     folder: string,
   ): Promise<UploadApiResponse> {
+    // Falla temprano y claro si el servidor no tiene credenciales de Cloudinary,
+    // en vez de dejar que el SDK lance un error críptico.
+    const { cloud_name, api_key, api_secret } = cloudinary.config();
+    if (!cloud_name || !api_key || !api_secret) {
+      throw new InternalServerErrorException(
+        'Cloudinary no está configurado en el servidor: faltan las credenciales ' +
+          '(CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET).',
+      );
+    }
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -93,7 +107,13 @@ export class UploadService {
         },
         (error, result) => {
           if (error || !result) {
-            reject(error ?? new Error('Error al subir imagen a Cloudinary'));
+            const detail = error?.message ?? 'respuesta vacía de Cloudinary';
+            this.logger.error(`Error al subir imagen a Cloudinary: ${detail}`);
+            reject(
+              new InternalServerErrorException(
+                `Error al subir imagen a Cloudinary: ${detail}`,
+              ),
+            );
           } else {
             resolve(result);
           }
