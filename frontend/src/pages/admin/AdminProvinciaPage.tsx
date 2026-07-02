@@ -1294,17 +1294,10 @@ export default function AdminProvinciaPage() {
     setCreateSuccess(false);
     setUploadProgress(0);
 
-    const formData = new FormData();
-    formData.append('subactivityId', actSubactivity);
-    formData.append('title', actTitle);
-    formData.append('description', actDescription);
-    formData.append('message', actMessage);
-    formData.append('date', actDate);
     const totalAtt = Object.values(attendeesByDep).reduce((s, v) => s + (v || 0), 0);
-    formData.append('attendees', String(totalAtt));
-    DEPARTMENTS.filter(d => (attendeesByDep[d.id] || 0) > 0)
-      .forEach(d => formData.append('departments', d.label));
-    actPhotos.forEach(photo => formData.append('photos', photo));
+    const departments = DEPARTMENTS
+      .filter(d => (attendeesByDep[d.id] || 0) > 0)
+      .map(d => d.label);
 
     // Simula progreso de upload si hay fotos
     let progressInterval: ReturnType<typeof setInterval> | null = null;
@@ -1315,7 +1308,20 @@ export default function AdminProvinciaPage() {
     }
 
     try {
-      await adminApi.createActivity(formData);
+      // 1) Crear la actividad (JSON). 2) Subir las fotos aparte al endpoint de upload.
+      const activity = await adminApi.createActivity({
+        processId: proc!.id,
+        subactivityId: actSubactivity,
+        title: actTitle,
+        description: actDescription,
+        message: actMessage,
+        date: actDate,
+        attendees: totalAtt,
+        departments,
+      });
+      for (const photo of actPhotos) {
+        await adminApi.uploadActivityPhoto(activity.id, photo);
+      }
       if (progressInterval) clearInterval(progressInterval);
       setUploadProgress(100);
 

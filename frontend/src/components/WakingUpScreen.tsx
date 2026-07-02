@@ -81,7 +81,7 @@ function CompletionScreen({ score }: { score: number }) {
               color: 'rgba(255,255,255,0.3)',
               marginBottom: 8,
             }}>
-              Mientras esperabas construiste
+              Mientras esperabas conectaste
             </div>
             <div style={{
               fontFamily: "'Antonio', sans-serif",
@@ -101,7 +101,7 @@ function CompletionScreen({ score }: { score: number }) {
               color: 'rgba(255,255,255,0.28)',
               marginTop: 6,
             }}>
-              {score === 1 ? 'puente' : 'puentes'}
+              {score === 1 ? 'tramo de Cundinamarca' : 'tramos de Cundinamarca'}
             </div>
           </div>
         )}

@@ -26,15 +26,15 @@ export class CreateActivityDto {
   @MaxLength(200)
   title: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(2000)
-  description: string;
+  description?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
-  message: string;
+  message?: string;
 
   @IsDateString()
   date: string;

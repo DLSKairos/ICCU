@@ -88,8 +88,26 @@ export const adminApi = {
     api.post('/activities/subactivities/global', { name, year, target }).then(r => r.data),
   deleteSubactivity: (id: string) =>
     api.delete(`/activities/subactivities/${id}`),
-  createActivity: (formData: FormData) =>
-    api.post('/activities', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+  createActivity: (data: {
+    processId: string;
+    subactivityId: string;
+    title: string;
+    description: string;
+    message: string;
+    date: string;
+    attendees: number;
+    departments: string[];
+  }) =>
+    api.post('/activities', data).then(r => r.data),
+  uploadActivityPhoto: (activityId: string, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api
+      .post(`/upload/activities/${activityId}/photos`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(r => r.data);
+  },
   deleteActivity: (id: string) =>
     api.delete(`/activities/${id}`),
   resetPreview: (year: number) =>
