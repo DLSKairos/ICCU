@@ -51,6 +51,17 @@ function getPeriodStart(period: Period, reference: Date): Date {
   return new Date(d.getFullYear(), 0, 1);
 }
 
+// Parsea una fecha del backend ("YYYY-MM-DD") como medianoche LOCAL, no UTC.
+// `new Date("2026-07-01")` se interpreta como UTC y, en zonas con offset
+// negativo (Colombia UTC-5), queda 5h antes del inicio de mes/trimestre
+// construido en hora local, lo que excluía erróneamente las ejecuciones
+// registradas justo el primer día del período.
+export function parseLocalDate(value: string | Date): Date {
+  if (value instanceof Date) return value;
+  const [y, m, d] = value.split('T')[0].split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export function getExecutedInPeriod(
   subactivity: Subactivity,
   period: Period,
@@ -58,7 +69,10 @@ export function getExecutedInPeriod(
 ): number {
   const start = getPeriodStart(period, today);
   return (subactivity.executions ?? [])
-    .filter(e => new Date(e.date) >= start && new Date(e.date) <= today)
+    .filter(e => {
+      const date = parseLocalDate(e.date);
+      return date >= start && date <= today;
+    })
     .reduce((sum, e) => sum + e.count, 0);
 }
 
@@ -104,7 +118,10 @@ export function calcProcessMetrics(
   // Participantes en el período (suma de actividades dentro del período)
   const periodStart = getPeriodStart(period, today);
   const attendeesInPeriod = (process.activities ?? [])
-    .filter(a => new Date(a.date) >= periodStart && new Date(a.date) <= today)
+    .filter(a => {
+      const date = parseLocalDate(a.date);
+      return date >= periodStart && date <= today;
+    })
     .reduce((sum, a) => sum + a.attendees, 0);
 
   return {
