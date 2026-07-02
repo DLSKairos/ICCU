@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { IccuLogo } from '../../components/ui/IccuLogo';
 import { LoadingSpinner } from '../../components/admin/LoadingSpinner';
 import { ErrorMessage } from '../../components/admin/ErrorMessage';
+import { DangerDeleteModal } from '../../components/admin/DangerDeleteModal';
 import { adminApi, absenceApi } from '../../services/api';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -209,13 +210,26 @@ interface ResetModalProps {
 
 function ResetModal({ onClose }: ResetModalProps) {
   const [confirmText, setConfirmText] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
+  const [copied, setCopied] = useState(false);
   const [preview, setPreview] = useState<unknown>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
-  const canProceed = confirmText === 'CONFIRMAR';
+  const confirmPhrase = `reiniciar ${currentYear - 1}`;
+  const canProceed = confirmText.trim() === confirmPhrase;
+
+  const copyPhrase = async () => {
+    try {
+      await navigator.clipboard.writeText(confirmPhrase);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard no disponible — el usuario puede escribir la frase */
+    }
+  };
 
   useEffect(() => {
     adminApi
@@ -374,8 +388,56 @@ function ResetModal({ onClose }: ResetModalProps) {
         {result && <FeedbackBanner type="success" message={result} />}
         {error && <FeedbackBanner type="error" message={error} />}
 
-        {!result && (
+        {!result && step === 1 && (
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={executing}
+              className="flex-1 rounded-xl cursor-pointer transition-all"
+              style={{ height: 48, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.65)', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 15, opacity: executing ? 0.5 : 1 }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => setStep(2)}
+              className="flex-1 rounded-xl font-semibold cursor-pointer transition-all"
+              style={{ height: 48, background: 'rgba(224,9,20,0.16)', border: '1px solid rgba(224,9,20,0.45)', color: '#ff9aa2', fontFamily: "'Antonio', sans-serif", fontSize: '1rem', letterSpacing: '0.05em' }}
+            >
+              Sí, continuar
+            </button>
+          </div>
+        )}
+
+        {!result && step === 2 && (
           <>
+            {/* Frase a copiar */}
+            <div
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5"
+              style={{ background: 'rgba(224,9,20,0.08)', border: '1px dashed rgba(224,9,20,0.40)' }}
+            >
+              <code className="flex-1 truncate" style={{ fontFamily: "'Roboto Mono', ui-monospace, monospace", fontSize: 14, color: '#fff' }} title={confirmPhrase}>
+                {confirmPhrase}
+              </code>
+              <button
+                onClick={copyPhrase}
+                className="flex items-center gap-1.5 shrink-0 cursor-pointer rounded-md px-2.5 py-1.5 transition-all"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: copied ? '#86efac' : 'rgba(255,255,255,0.75)', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 12 }}
+                title="Copiar"
+              >
+                {copied ? (
+                  <>
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><rect x={9} y={9} width={13} height={13} rx={2} stroke="currentColor" strokeWidth={2} /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
+                    Copiar
+                  </>
+                )}
+              </button>
+            </div>
+
             {/* Input de confirmación */}
             <div>
               <label
@@ -388,8 +450,8 @@ function ResetModal({ onClose }: ResetModalProps) {
                   marginBottom: 8,
                 }}
               >
-                Escribe{' '}
-                <strong style={{ color: '#ff9aa2', fontFamily: 'monospace' }}>CONFIRMAR</strong>
+                Escribe o copia{' '}
+                <strong style={{ color: '#ff9aa2', fontFamily: 'monospace' }}>{confirmPhrase}</strong>
                 {' '}para habilitar el botón:
               </label>
               <input
@@ -397,7 +459,7 @@ function ResetModal({ onClose }: ResetModalProps) {
                 type="text"
                 value={confirmText}
                 onChange={e => setConfirmText(e.target.value)}
-                placeholder="CONFIRMAR"
+                placeholder={confirmPhrase}
                 autoComplete="off"
                 className="w-full outline-none transition-all"
                 style={{
@@ -418,7 +480,7 @@ function ResetModal({ onClose }: ResetModalProps) {
             {/* Botones */}
             <div className="flex gap-3">
               <button
-                onClick={onClose}
+                onClick={() => { if (!executing) setStep(1); }}
                 disabled={executing}
                 className="flex-1 rounded-xl cursor-pointer transition-all"
                 style={{
@@ -431,7 +493,7 @@ function ResetModal({ onClose }: ResetModalProps) {
                   opacity: executing ? 0.5 : 1,
                 }}
               >
-                Cancelar
+                Volver
               </button>
               <button
                 onClick={handleReset}
@@ -1186,6 +1248,8 @@ export default function AdminProvinciaPage() {
   const [addingNew, setAddingNew] = useState(false);
   const [addNewError, setAddNewError] = useState<string | null>(null);
   const [deletingSubId, setDeletingSubId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'activity' | 'sub'; id: string; name: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ── Carga de datos ──────────────────────────────────────────────────────────
 
@@ -1356,16 +1420,24 @@ export default function AdminProvinciaPage() {
 
   // ── Eliminar actividad ──────────────────────────────────────────────────────
 
-  const handleDeleteActivity = async (actId: string) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta actividad? Esta acción no se puede deshacer.')) return;
-    setDeletingId(actId);
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
     try {
-      await adminApi.deleteActivity(actId);
+      if (deleteTarget.kind === 'activity') {
+        setDeletingId(deleteTarget.id);
+        await adminApi.deleteActivity(deleteTarget.id);
+      } else {
+        setDeletingSubId(deleteTarget.id);
+        await adminApi.deleteSubactivity(deleteTarget.id);
+      }
       loadProcess();
+      setDeleteTarget(null);
     } catch {
-      alert('No se pudo eliminar la actividad. Intenta de nuevo.');
+      setDeleteError('No se pudo eliminar. Intenta de nuevo.');
     } finally {
       setDeletingId(null);
+      setDeletingSubId(null);
     }
   };
 
@@ -1387,19 +1459,6 @@ export default function AdminProvinciaPage() {
       setAddNewError('Error al agregar. Intenta de nuevo.');
     } finally {
       setAddingNew(false);
-    }
-  };
-
-  const handleDeleteSub = async (subId: string) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta actividad del plan? Se eliminarán sus registros asociados.')) return;
-    setDeletingSubId(subId);
-    try {
-      await adminApi.deleteSubactivity(subId);
-      loadProcess();
-    } catch {
-      alert('No se pudo eliminar. Intenta de nuevo.');
-    } finally {
-      setDeletingSubId(null);
     }
   };
 
@@ -1693,6 +1752,25 @@ export default function AdminProvinciaPage() {
         </div>
       )}
 
+      {/* Modal de borrado destructivo (dos pasos, estilo GitHub) */}
+      <DangerDeleteModal
+        open={deleteTarget !== null}
+        title={deleteTarget?.kind === 'activity' ? 'Eliminar actividad registrada' : 'Eliminar del plan'}
+        itemName={deleteTarget?.name ?? ''}
+        warning={
+          deleteTarget?.kind === 'activity'
+            ? 'Se eliminará este registro de actividad, sus fotos y su aporte al avance del período.'
+            : 'Se eliminará esta actividad del plan junto con todos sus registros, ejecuciones y su meta anual.'
+        }
+        loading={
+          (deleteTarget?.kind === 'activity' && deletingId === deleteTarget?.id) ||
+          (deleteTarget?.kind === 'sub' && deletingSubId === deleteTarget?.id)
+        }
+        error={deleteError}
+        onConfirm={handleConfirmDelete}
+        onClose={() => { setDeleteTarget(null); setDeleteError(null); }}
+      />
+
       {/* Header sticky */}
       <header
         className="sticky top-0 z-40 border-b"
@@ -1940,7 +2018,7 @@ export default function AdminProvinciaPage() {
                       {sub.target || 0}
                     </span>
                     <button
-                      onClick={() => handleDeleteSub(sub.id)}
+                      onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
                       disabled={deletingSubId === sub.id}
                       className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
                       style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
@@ -1969,7 +2047,7 @@ export default function AdminProvinciaPage() {
                       onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                     />
                     <button
-                      onClick={() => handleDeleteSub(sub.id)}
+                      onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
                       disabled={deletingSubId === sub.id}
                       className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
                       style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
@@ -2564,7 +2642,7 @@ export default function AdminProvinciaPage() {
 
                       {/* Botón eliminar con ícono papelera */}
                       <button
-                        onClick={() => handleDeleteActivity(act.id)}
+                        onClick={() => setDeleteTarget({ kind: 'activity', id: act.id, name: act.title })}
                         disabled={isDeleting}
                         title="Eliminar actividad"
                         className="shrink-0 flex items-center justify-center rounded-lg cursor-pointer transition-all"
