@@ -102,24 +102,27 @@ export class AbsenceService {
       );
     }
 
+    // Las fechas se guardan como @db.Date (medianoche UTC). Calculamos los
+    // límites del período en UTC para que la comparación no dependa de la
+    // zona horaria del servidor (mismo bug que afectaba al frontend).
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    today.setUTCHours(23, 59, 59, 999);
 
     let from: Date;
 
     if (period === 'semanal') {
       from = new Date(today);
-      from.setDate(today.getDate() - 7);
-      from.setHours(0, 0, 0, 0);
+      from.setUTCDate(today.getUTCDate() - 7);
+      from.setUTCHours(0, 0, 0, 0);
     } else if (period === 'mensual') {
-      from = new Date(today.getFullYear(), today.getMonth(), 1);
+      from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
     } else if (period === 'trimestral') {
       from = new Date(today);
-      from.setMonth(today.getMonth() - 3);
-      from.setHours(0, 0, 0, 0);
+      from.setUTCMonth(today.getUTCMonth() - 3);
+      from.setUTCHours(0, 0, 0, 0);
     } else {
       // anual
-      from = new Date(today.getFullYear(), 0, 1);
+      from = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
     }
 
     const records = await this.prisma.absenceRecord.findMany({
@@ -149,7 +152,7 @@ export class AbsenceService {
     const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const weekdayMap = new Map<number, number>();
     for (const r of records) {
-      const dayIndex = r.startDate.getDay();
+      const dayIndex = r.startDate.getUTCDay();
       weekdayMap.set(dayIndex, (weekdayMap.get(dayIndex) ?? 0) + 1);
     }
     const byStartWeekday = Array.from(weekdayMap.entries())
@@ -212,7 +215,7 @@ export class AbsenceService {
     const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const weekdayMap = new Map<number, number>();
     for (const r of records) {
-      const dayIndex = r.startDate.getDay();
+      const dayIndex = r.startDate.getUTCDay();
       weekdayMap.set(dayIndex, (weekdayMap.get(dayIndex) ?? 0) + 1);
     }
     const byStartWeekday = Array.from(weekdayMap.entries())
