@@ -74,7 +74,7 @@ export function DangerDeleteModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+      className="fixed inset-0 z-60 flex items-center justify-center px-4"
       style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget && !loading) onClose();
