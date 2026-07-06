@@ -586,7 +586,7 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
 
           {/* ── Colaboradores registrados ── */}
           <div style={{ marginBottom: 36 }}>
-            <SectionTitle>Colaboradores registrados</SectionTitle>
+            <SectionTitle>Colaboradores</SectionTitle>
             <div
               style={{
                 background: 'rgba(255,255,255,0.97)',

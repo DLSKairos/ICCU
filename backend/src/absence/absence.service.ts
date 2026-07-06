@@ -227,7 +227,9 @@ export class AbsenceService {
       }
     }
 
-    return Array.from(map.values()).sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+    return Array.from(map.values()).sort(
+      (a, b) => b.cases - a.cases || a.employeeName.localeCompare(b.employeeName),
+    );
   }
 
   // ─── Stats ──────────────────────────────────────────────────────────────────
