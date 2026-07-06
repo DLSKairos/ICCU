@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateAbsenceDto } from './dto/create-absence.dto.js';
+import { UpdateAbsenceDto } from './dto/update-absence.dto.js';
 
 export interface Cie10Result {
   code: string;
@@ -58,8 +59,8 @@ export class AbsenceService {
         days,
         incapacityType: dto.incapacityType,
         department: dto.department,
-        diagnosticCode: dto.diagnosticCode ?? null,
-        diagnosticConcept: dto.diagnosticConcept ?? null,
+        diagnosticCode: dto.diagnosticCode,
+        diagnosticConcept: dto.diagnosticConcept,
         year,
       },
     });
@@ -72,6 +73,73 @@ export class AbsenceService {
       where: { processId, year },
       orderBy: { startDate: 'desc' },
     });
+  }
+
+  async findOne(id: string) {
+    const record = await this.prisma.absenceRecord.findUnique({ where: { id } });
+
+    if (!record) {
+      throw new NotFoundException(`Registro de ausencia '${id}' no encontrado`);
+    }
+
+    return record;
+  }
+
+  // ─── Update ─────────────────────────────────────────────────────────────────
+
+  async update(id: string, dto: UpdateAbsenceDto) {
+    const existing = await this.findOne(id);
+
+    const start = dto.startDate ? new Date(dto.startDate) : existing.startDate;
+    const end = dto.endDate ? new Date(dto.endDate) : existing.endDate;
+    const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+
+    if (days < 1) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser igual o posterior a la fecha de inicio',
+      );
+    }
+
+    const updateData: {
+      identification?: string;
+      employeeName?: string;
+      requestDate?: Date;
+      startDate?: Date;
+      endDate?: Date;
+      days?: number;
+      year?: number;
+      incapacityType?: string;
+      department?: string;
+      diagnosticCode?: string | null;
+      diagnosticConcept?: string | null;
+    } = {};
+
+    if (dto.identification !== undefined) updateData.identification = dto.identification;
+    if (dto.employeeName !== undefined) updateData.employeeName = dto.employeeName;
+    if (dto.requestDate !== undefined) updateData.requestDate = new Date(dto.requestDate);
+    if (dto.incapacityType !== undefined) updateData.incapacityType = dto.incapacityType;
+    if (dto.department !== undefined) updateData.department = dto.department;
+    if (dto.diagnosticCode !== undefined) updateData.diagnosticCode = dto.diagnosticCode ?? null;
+    if (dto.diagnosticConcept !== undefined) updateData.diagnosticConcept = dto.diagnosticConcept ?? null;
+
+    if (dto.startDate || dto.endDate) {
+      updateData.startDate = start;
+      updateData.endDate = end;
+      updateData.days = days;
+      updateData.year = start.getFullYear();
+    }
+
+    return this.prisma.absenceRecord.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+
+  // ─── Remove ─────────────────────────────────────────────────────────────────
+
+  async remove(id: string): Promise<void> {
+    await this.findOne(id);
+    await this.prisma.absenceRecord.delete({ where: { id } });
   }
 
   // ─── Employee search ────────────────────────────────────────────────────────

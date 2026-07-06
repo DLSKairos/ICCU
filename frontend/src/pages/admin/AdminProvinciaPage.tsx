@@ -555,6 +555,24 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
   const [loadingAbsences, setLoadingAbsences] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [formErrors, setFormErrors] = useState<{
+    identification?: boolean;
+    employeeName?: boolean;
+    requestDate?: boolean;
+    startDate?: boolean;
+    endDate?: boolean;
+    incapacityType?: boolean;
+    department?: boolean;
+    diagnosticCode?: boolean;
+  }>({});
+
+  // Edición de un registro existente
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Eliminación de un registro existente
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Campos del formulario
   const [identification, setIdentification] = useState('');
@@ -684,6 +702,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
     setCie10Query('');
     setCie10Results([]);
     setShowCie10Dropdown(false);
+    if (formErrors.diagnosticCode) setFormErrors(p => ({ ...p, diagnosticCode: false }));
   };
 
   const handleClearCie10 = () => {
@@ -694,52 +713,133 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
     setShowCie10Dropdown(false);
   };
 
+  const resetForm = () => {
+    setIdentification('');
+    setEmployeeName('');
+    setRequestDate('');
+    setStartDate('');
+    setEndDate('');
+    setDays(0);
+    setIncapacityType('');
+    setDepartment('');
+    setDiagnosticCode('');
+    setDiagnosticConcept('');
+    setCie10Query('');
+    setCie10Results([]);
+    setEmpQuery('');
+    setEmpResults([]);
+    setEditingId(null);
+    setFormErrors({});
+  };
+
+  // No permite guardar mientras falte algún campo obligatorio
+  const isFormComplete = Boolean(
+    identification.trim() &&
+    employeeName.trim() &&
+    requestDate &&
+    startDate &&
+    endDate &&
+    incapacityType &&
+    department &&
+    diagnosticCode &&
+    days > 0,
+  );
+
+  const handleEditClick = (abs: AbsenceRecord) => {
+    setEditingId(abs.id);
+    setIdentification(abs.identification);
+    setEmployeeName(abs.employeeName);
+    setRequestDate(abs.requestDate?.substring(0, 10) ?? '');
+    setStartDate(abs.startDate?.substring(0, 10) ?? '');
+    setEndDate(abs.endDate?.substring(0, 10) ?? '');
+    setIncapacityType(abs.incapacityType);
+    setDepartment(abs.department);
+    setDiagnosticCode(abs.diagnosticCode ?? '');
+    setDiagnosticConcept(abs.diagnosticConcept ?? '');
+    setCie10Query('');
+    setCie10Results([]);
+    setFeedback(null);
+    setFormErrors({});
+  };
+
+  const handleCancelEdit = () => {
+    resetForm();
+    setFeedback(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identification || !employeeName || !requestDate || !startDate || !endDate || !incapacityType || !department) {
-      setFeedback({ type: 'error', message: 'Todos los campos marcados con * son obligatorios.' });
+
+    // Validación inline: marca en rojo cada campo obligatorio vacío
+    const errors: typeof formErrors = {};
+    if (!identification.trim()) errors.identification = true;
+    if (!employeeName.trim()) errors.employeeName = true;
+    if (!requestDate) errors.requestDate = true;
+    if (!startDate) errors.startDate = true;
+    if (!endDate) errors.endDate = true;
+    if (!incapacityType) errors.incapacityType = true;
+    if (!department) errors.department = true;
+    if (!diagnosticCode) errors.diagnosticCode = true;
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setFeedback({ type: 'error', message: 'Completa los campos obligatorios marcados en rojo.' });
       return;
     }
     if (days <= 0) {
       setFeedback({ type: 'error', message: 'La fecha de fin debe ser igual o posterior a la fecha de inicio.' });
       return;
     }
+    setFormErrors({});
     setSubmitting(true);
     setFeedback(null);
+    const fields = {
+      identification,
+      employeeName,
+      requestDate,
+      startDate,
+      endDate,
+      incapacityType,
+      department,
+      diagnosticCode,
+      diagnosticConcept,
+    };
     try {
-      await adminApi.createAbsence({
-        processId,
-        identification,
-        employeeName,
-        requestDate,
-        startDate,
-        endDate,
-        incapacityType,
-        department,
-        diagnosticCode: diagnosticCode || undefined,
-        diagnosticConcept: diagnosticConcept || undefined,
-      });
-      // Limpiar formulario
-      setIdentification('');
-      setEmployeeName('');
-      setRequestDate('');
-      setStartDate('');
-      setEndDate('');
-      setDays(0);
-      setIncapacityType('');
-      setDepartment('');
-      setDiagnosticCode('');
-      setDiagnosticConcept('');
-      setCie10Query('');
-      setCie10Results([]);
-      setEmpQuery('');
-      setEmpResults([]);
-      setFeedback({ type: 'success', message: 'Registro de ausencia creado correctamente.' });
+      if (editingId) {
+        // UpdateAbsenceDto no acepta processId (el ValidationPipe global rechaza
+        // propiedades no declaradas en el DTO), por lo que no se incluye aquí.
+        await adminApi.updateAbsence(editingId, fields);
+        setFeedback({ type: 'success', message: 'Registro de ausencia actualizado correctamente.' });
+      } else {
+        await adminApi.createAbsence({ processId, ...fields });
+        setFeedback({ type: 'success', message: 'Registro de ausencia creado correctamente.' });
+      }
+      resetForm();
       loadAbsences();
     } catch {
-      setFeedback({ type: 'error', message: 'Error al registrar la ausencia. Verifica los datos e intenta de nuevo.' });
+      setFeedback({
+        type: 'error',
+        message: editingId
+          ? 'Error al actualizar el registro. Verifica los datos e intenta de nuevo.'
+          : 'Error al registrar la ausencia. Verifica los datos e intenta de nuevo.',
+      });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    setDeletingId(deleteTarget.id);
+    try {
+      await adminApi.deleteAbsence(deleteTarget.id);
+      if (editingId === deleteTarget.id) resetForm();
+      loadAbsences();
+      setDeleteTarget(null);
+    } catch {
+      setDeleteError('No se pudo eliminar el registro. Intenta de nuevo.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -753,22 +853,26 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
   return (
     <>
       {/* ── Registrar ausencia ──────────────────────────────────────────────── */}
-      <SectionCard title="Registrar ausencia">
+      <SectionCard title={editingId ? 'Editar ausencia' : 'Registrar ausencia'}>
         <form onSubmit={handleSubmit} noValidate>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             {/* Identificación */}
             <div ref={empIdRef} style={{ position: 'relative' }}>
-              <label htmlFor="abs-identification" style={labelStyle}>Identificación *</label>
+              <label htmlFor="abs-identification" style={{ ...labelStyle, color: formErrors.identification ? '#ff9aa2' : labelStyle.color }}>Identificación *</label>
               <input
                 id="abs-identification"
                 type="text"
                 value={identification}
-                onChange={e => { setIdentification(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('identification'); }}
+                onChange={e => { setIdentification(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('identification'); if (formErrors.identification) setFormErrors(p => ({ ...p, identification: false })); }}
                 onFocus={e => { setActiveEmpField('identification'); if (empResults.length > 0) setShowEmpDropdown(true); e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = formErrors.identification ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = formErrors.identification ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)'; }}
                 placeholder="Número de cédula"
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  borderColor: formErrors.identification ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.identification ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
                 autoComplete="off"
               />
@@ -788,16 +892,20 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Nombre del empleado */}
             <div ref={empNameRef} style={{ position: 'relative' }}>
-              <label htmlFor="abs-employee-name" style={labelStyle}>Nombre del empleado *</label>
+              <label htmlFor="abs-employee-name" style={{ ...labelStyle, color: formErrors.employeeName ? '#ff9aa2' : labelStyle.color }}>Nombre del empleado *</label>
               <input
                 id="abs-employee-name"
                 type="text"
                 value={employeeName}
-                onChange={e => { setEmployeeName(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('employeeName'); }}
+                onChange={e => { setEmployeeName(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('employeeName'); if (formErrors.employeeName) setFormErrors(p => ({ ...p, employeeName: false })); }}
                 onFocus={e => { setActiveEmpField('employeeName'); if (empResults.length > 0) setShowEmpDropdown(true); e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = formErrors.employeeName ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)'; e.currentTarget.style.background = formErrors.employeeName ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)'; }}
                 placeholder="Nombre completo"
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  borderColor: formErrors.employeeName ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.employeeName ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
                 autoComplete="off"
               />
@@ -817,13 +925,18 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Fecha de solicitud */}
             <div>
-              <label htmlFor="abs-request-date" style={labelStyle}>Fecha de solicitud *</label>
+              <label htmlFor="abs-request-date" style={{ ...labelStyle, color: formErrors.requestDate ? '#ff9aa2' : labelStyle.color }}>Fecha de solicitud *</label>
               <input
                 id="abs-request-date"
                 type="date"
                 value={requestDate}
-                onChange={e => setRequestDate(e.target.value)}
-                style={{ ...inputStyle, colorScheme: 'dark' }}
+                onChange={e => { setRequestDate(e.target.value); if (formErrors.requestDate) setFormErrors(p => ({ ...p, requestDate: false })); }}
+                style={{
+                  ...inputStyle,
+                  colorScheme: 'dark',
+                  borderColor: formErrors.requestDate ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.requestDate ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
               />
               {requestDate && (
@@ -835,13 +948,18 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Fecha inicio de permiso */}
             <div>
-              <label htmlFor="abs-start-date" style={labelStyle}>Fecha inicio de permiso *</label>
+              <label htmlFor="abs-start-date" style={{ ...labelStyle, color: formErrors.startDate ? '#ff9aa2' : labelStyle.color }}>Fecha inicio de permiso *</label>
               <input
                 id="abs-start-date"
                 type="date"
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                style={{ ...inputStyle, colorScheme: 'dark' }}
+                onChange={e => { setStartDate(e.target.value); if (formErrors.startDate) setFormErrors(p => ({ ...p, startDate: false })); }}
+                style={{
+                  ...inputStyle,
+                  colorScheme: 'dark',
+                  borderColor: formErrors.startDate ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.startDate ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
               />
               {startDate && (
@@ -853,13 +971,18 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Fecha fin de permiso */}
             <div>
-              <label htmlFor="abs-end-date" style={labelStyle}>Fecha fin de permiso *</label>
+              <label htmlFor="abs-end-date" style={{ ...labelStyle, color: formErrors.endDate ? '#ff9aa2' : labelStyle.color }}>Fecha fin de permiso *</label>
               <input
                 id="abs-end-date"
                 type="date"
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                style={{ ...inputStyle, colorScheme: 'dark' }}
+                onChange={e => { setEndDate(e.target.value); if (formErrors.endDate) setFormErrors(p => ({ ...p, endDate: false })); }}
+                style={{
+                  ...inputStyle,
+                  colorScheme: 'dark',
+                  borderColor: formErrors.endDate ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.endDate ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
               />
               {endDate && (
@@ -884,12 +1007,16 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Tipo de incapacidad */}
             <div>
-              <label htmlFor="abs-incapacity-type" style={labelStyle}>Tipo de incapacidad *</label>
+              <label htmlFor="abs-incapacity-type" style={{ ...labelStyle, color: formErrors.incapacityType ? '#ff9aa2' : labelStyle.color }}>Tipo de incapacidad *</label>
               <select
                 id="abs-incapacity-type"
                 value={incapacityType}
-                onChange={e => setIncapacityType(e.target.value)}
-                style={selectStyle}
+                onChange={e => { setIncapacityType(e.target.value); if (formErrors.incapacityType) setFormErrors(p => ({ ...p, incapacityType: false })); }}
+                style={{
+                  ...selectStyle,
+                  borderColor: formErrors.incapacityType ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.incapacityType ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
               >
                 <option value="" style={{ background: '#0e2d4f' }}>Selecciona un tipo</option>
@@ -901,12 +1028,16 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Dependencia */}
             <div>
-              <label htmlFor="abs-department" style={labelStyle}>Dependencia *</label>
+              <label htmlFor="abs-department" style={{ ...labelStyle, color: formErrors.department ? '#ff9aa2' : labelStyle.color }}>Dependencia *</label>
               <select
                 id="abs-department"
                 value={department}
-                onChange={e => setDepartment(e.target.value)}
-                style={selectStyle}
+                onChange={e => { setDepartment(e.target.value); if (formErrors.department) setFormErrors(p => ({ ...p, department: false })); }}
+                style={{
+                  ...selectStyle,
+                  borderColor: formErrors.department ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                  background: formErrors.department ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                }}
                 className="outline-none"
               >
                 <option value="" style={{ background: '#0e2d4f' }}>Selecciona una dependencia</option>
@@ -920,7 +1051,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
             {/* Diagnóstico CIE-10 */}
             <div className="sm:col-span-2" ref={cie10Ref} style={{ position: 'relative' }}>
-              <label style={labelStyle}>Diagnóstico CIE-10 (opcional)</label>
+              <label style={{ ...labelStyle, color: formErrors.diagnosticCode ? '#ff9aa2' : labelStyle.color }}>Diagnóstico CIE-10 *</label>
 
               {/* Chips de selección actual */}
               {diagnosticCode && (
@@ -974,7 +1105,11 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                   onChange={e => { setCie10Query(e.target.value); }}
                   onFocus={() => { if (cie10Results.length > 0) setShowCie10Dropdown(true); }}
                   placeholder="Busca por código CIE-10 (ej: E10, J18) o por nombre..."
-                  style={inputStyle}
+                  style={{
+                    ...inputStyle,
+                    borderColor: formErrors.diagnosticCode ? 'rgba(224,9,20,0.55)' : 'rgba(255,255,255,0.13)',
+                    background: formErrors.diagnosticCode ? 'rgba(224,9,20,0.08)' : 'rgba(255,255,255,0.06)',
+                  }}
                   className="outline-none"
                   autoComplete="off"
                 />
@@ -1059,35 +1194,61 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
             </div>
           )}
 
-          {/* Botón submit */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-xl font-semibold mt-5 transition-all"
-            style={{
-              height: 52,
-              background: submitting ? 'rgba(212,175,55,0.25)' : '#D4AF37',
-              border: 'none',
-              color: submitting ? 'rgba(255,255,255,0.50)' : '#0e2d4f',
-              fontFamily: "'Antonio', sans-serif",
-              fontSize: '1.05rem',
-              letterSpacing: '0.06em',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              boxShadow: submitting ? 'none' : '0 4px 16px rgba(212,175,55,0.30)',
-            }}
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <span
-                  className="inline-block rounded-full border-2 animate-spin"
-                  style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#0e2d4f' }}
-                />
-                Registrando...
-              </span>
-            ) : (
-              'Registrar ausencia'
+          {/* Botones submit / cancelar edición */}
+          <div className="flex gap-3 mt-5">
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={submitting}
+                className="rounded-xl font-semibold transition-all"
+                style={{
+                  height: 52,
+                  padding: '0 24px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  color: 'rgba(255,255,255,0.65)',
+                  fontFamily: "'Antonio', sans-serif",
+                  fontSize: '1.05rem',
+                  letterSpacing: '0.06em',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancelar edición
+              </button>
             )}
-          </button>
+            <button
+              type="submit"
+              disabled={submitting || !isFormComplete}
+              title={!isFormComplete ? 'Completa todos los campos obligatorios (*) para guardar' : undefined}
+              className="flex-1 rounded-xl font-semibold transition-all"
+              style={{
+                height: 52,
+                background: submitting || !isFormComplete ? 'rgba(212,175,55,0.25)' : '#D4AF37',
+                border: 'none',
+                color: submitting || !isFormComplete ? 'rgba(255,255,255,0.50)' : '#0e2d4f',
+                fontFamily: "'Antonio', sans-serif",
+                fontSize: '1.05rem',
+                letterSpacing: '0.06em',
+                cursor: submitting || !isFormComplete ? 'not-allowed' : 'pointer',
+                boxShadow: submitting || !isFormComplete ? 'none' : '0 4px 16px rgba(212,175,55,0.30)',
+              }}
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span
+                    className="inline-block rounded-full border-2 animate-spin"
+                    style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#0e2d4f' }}
+                  />
+                  {editingId ? 'Guardando...' : 'Registrando...'}
+                </span>
+              ) : editingId ? (
+                'Guardar cambios'
+              ) : (
+                'Registrar ausencia'
+              )}
+            </button>
+          </div>
         </form>
       </SectionCard>
 
@@ -1125,6 +1286,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     'Tipo Incapacidad',
                     'Código CIE',
                     'Concepto',
+                    'Acciones',
                   ].map(col => (
                     <th
                       key={col}
@@ -1146,10 +1308,16 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 </tr>
               </thead>
               <tbody>
-                {absences.map(abs => (
+                {absences.map(abs => {
+                  const isDeleting = deletingId === abs.id;
+                  return (
                   <tr
                     key={abs.id}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                    style={{
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      background: editingId === abs.id ? 'rgba(212,175,55,0.06)' : undefined,
+                      opacity: isDeleting ? 0.5 : 1,
+                    }}
                   >
                     {[
                       abs.identification,
@@ -1180,13 +1348,72 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                         {cell}
                       </td>
                     ))}
+                    <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditClick(abs)}
+                          disabled={isDeleting}
+                          title="Editar registro"
+                          className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg transition-all"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            background: 'rgba(212,175,55,0.10)',
+                            border: '1px solid rgba(212,175,55,0.25)',
+                            color: '#D4AF37',
+                            opacity: isDeleting ? 0.5 : 1,
+                          }}
+                        >
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget({ id: abs.id, name: `${abs.employeeName} (${abs.identification})` })}
+                          disabled={isDeleting}
+                          title="Eliminar registro"
+                          className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg transition-all"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            background: 'rgba(224,9,20,0.10)',
+                            border: '1px solid rgba(224,9,20,0.22)',
+                            color: '#ff9aa2',
+                            opacity: isDeleting ? 0.5 : 1,
+                          }}
+                        >
+                          {isDeleting ? (
+                            <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(255,154,162,0.3)', borderTopColor: '#ff9aa2' }} />
+                          ) : (
+                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </SectionCard>
+
+      {/* Modal de borrado destructivo (dos pasos, estilo GitHub) — consistente con el borrado de actividades */}
+      <DangerDeleteModal
+        open={deleteTarget !== null}
+        title="Eliminar registro de ausencia"
+        itemName={deleteTarget?.name ?? ''}
+        warning="Se eliminará permanentemente este registro de ausencia."
+        loading={deletingId === deleteTarget?.id}
+        error={deleteError}
+        onConfirm={handleConfirmDelete}
+        onClose={() => { setDeleteTarget(null); setDeleteError(null); }}
+      />
     </>
   );
 }

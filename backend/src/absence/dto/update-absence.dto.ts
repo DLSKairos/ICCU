@@ -2,50 +2,56 @@ import {
   IsString,
   IsNotEmpty,
   IsDateString,
+  IsOptional,
   MaxLength,
 } from 'class-validator';
 
-export class CreateAbsenceDto {
-  @IsString()
-  @IsNotEmpty()
-  processId: string;
-
+export class UpdateAbsenceDto {
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  identification: string;
+  identification?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  employeeName: string;
+  employeeName?: string;
 
+  @IsOptional()
   @IsDateString()
-  requestDate: string;
+  requestDate?: string;
 
+  @IsOptional()
   @IsDateString()
-  startDate: string;
+  startDate?: string;
 
+  @IsOptional()
   @IsDateString()
-  endDate: string;
+  endDate?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  incapacityType: string;
+  incapacityType?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  department: string;
+  department?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
-  diagnosticCode: string;
+  diagnosticCode?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
-  diagnosticConcept: string;
+  diagnosticConcept?: string;
 }

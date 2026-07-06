@@ -2,15 +2,20 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AbsenceService } from './absence.service.js';
 import { CreateAbsenceDto } from './dto/create-absence.dto.js';
+import { UpdateAbsenceDto } from './dto/update-absence.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -59,5 +64,20 @@ export class AbsenceController {
   @Roles('admin')
   create(@Body() dto: CreateAbsenceDto) {
     return this.absenceService.create(dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  update(@Param('id') id: string, @Body() dto: UpdateAbsenceDto) {
+    return this.absenceService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.absenceService.remove(id);
   }
 }

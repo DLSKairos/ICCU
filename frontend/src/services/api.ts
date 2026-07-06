@@ -118,6 +118,10 @@ export const adminApi = {
     api.post('/absence', data).then(r => r.data),
   getAbsenceRecords: (processId: string, year: number) =>
     api.get(`/absence/process/${processId}?year=${year}`).then(r => r.data),
+  updateAbsence: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/absence/${id}`, data).then(r => r.data),
+  deleteAbsence: (id: string) =>
+    api.delete(`/absence/${id}`),
 };
 
 export const absenceApi = {
