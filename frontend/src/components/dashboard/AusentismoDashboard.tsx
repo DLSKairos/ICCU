@@ -6,7 +6,7 @@ import {
 import { PeriodSelector } from '../dashboard/PeriodSelector';
 import type { Period } from '../../utils/metrics';
 import { absenceApi } from '../../services/api';
-import type { AbsenceStats, PersonAbsenceStats, EmployeeSearchResult } from '../../services/api';
+import type { AbsenceStats, PersonAbsenceStats, EmployeeSearchResult, RegisteredEmployee } from '../../services/api';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -316,6 +316,7 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<AbsenceStats | null>(null);
+  const [registered, setRegistered] = useState<RegisteredEmployee[]>([]);
 
   // Estado del buscador
   const [empQuery, setEmpQuery] = useState('');
@@ -340,6 +341,11 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
       .then(data => setStats(data))
       .catch(() => setError('No se pudieron cargar las estadísticas. Verifica tu conexión.'))
       .finally(() => setLoading(false));
+
+    absenceApi
+      .getRegisteredEmployees(processId, period)
+      .then(data => setRegistered(Array.isArray(data) ? data : []))
+      .catch(() => setRegistered([]));
   }, [processId, period]);
 
   // Debounce en el buscador de empleados
@@ -564,6 +570,72 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
                     >
                       <span style={{ color: '#134174', fontWeight: 600 }}>{emp.employeeName}</span>
                       <span style={{ color: '#0087CF', marginLeft: 8, fontSize: 12 }}>CC {emp.identification}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Colaboradores registrados ── */}
+          <div style={{ marginBottom: 36 }}>
+            <SectionTitle>Colaboradores registrados</SectionTitle>
+            <div
+              style={{
+                background: 'rgba(255,255,255,0.97)',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                border: '1px solid rgba(0,135,207,0.28)',
+                borderRadius: 12,
+                padding: registered.length > 0 ? 16 : '28px 24px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1)',
+              }}
+            >
+              {registered.length === 0 ? (
+                <p style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(19,65,116,0.5)', fontSize: 14, textAlign: 'center' }}>
+                  No hay colaboradores registrados en este período.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+                    gap: 10,
+                    maxHeight: 340,
+                    overflowY: 'auto',
+                    paddingRight: 4,
+                  }}
+                >
+                  {registered.map(emp => (
+                    <button
+                      key={emp.identification}
+                      onClick={() => handleSelectEmployee(emp)}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: 4,
+                        textAlign: 'left',
+                        background: 'rgba(19,65,116,0.04)',
+                        border: '1px solid rgba(19,65,116,0.10)',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(212,175,55,0.10)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(212,175,55,0.35)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(19,65,116,0.04)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(19,65,116,0.10)'; }}
+                    >
+                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: '#134174', fontSize: 14, fontWeight: 600 }}>
+                        {emp.employeeName}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(19,65,116,0.55)', fontSize: 12 }}>
+                          {emp.department}
+                        </span>
+                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: '#0087CF', background: 'rgba(0,135,207,0.10)', border: '1px solid rgba(0,135,207,0.22)', borderRadius: 6, padding: '1px 7px', fontSize: 11 }}>
+                          {emp.cases} caso{emp.cases !== 1 ? 's' : ''}
+                        </span>
+                      </div>
                     </button>
                   ))}
                 </div>

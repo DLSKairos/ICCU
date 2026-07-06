@@ -43,6 +43,14 @@ export class AbsenceController {
     return this.absenceService.getStats(processId, period);
   }
 
+  @Get('registered')
+  getRegisteredEmployees(
+    @Query('processId') processId: string,
+    @Query('period') period: string,
+  ) {
+    return this.absenceService.getRegisteredEmployees(processId, period);
+  }
+
   @Get('person/:identification')
   getPersonStats(
     @Param('identification') identification: string,

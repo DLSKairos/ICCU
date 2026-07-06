@@ -37,6 +37,13 @@ export interface EmployeeSearchResult {
   department: string;
 }
 
+export interface RegisteredEmployee {
+  identification: string;
+  employeeName: string;
+  department: string;
+  cases: number;
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
@@ -134,6 +141,8 @@ export const absenceApi = {
     api.get(`/absence/stats?processId=${encodeURIComponent(processId)}&period=${encodeURIComponent(period)}`).then(r => r.data),
   getPerson: (identification: string, processId: string): Promise<PersonAbsenceStats> =>
     api.get(`/absence/person/${encodeURIComponent(identification)}?processId=${encodeURIComponent(processId)}`).then(r => r.data),
+  getRegisteredEmployees: (processId: string, period: string): Promise<RegisteredEmployee[]> =>
+    api.get(`/absence/registered?processId=${encodeURIComponent(processId)}&period=${encodeURIComponent(period)}`).then(r => r.data),
 };
 
 export const authApi = {

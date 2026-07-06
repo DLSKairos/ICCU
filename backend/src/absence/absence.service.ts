@@ -165,9 +165,12 @@ export class AbsenceService {
     });
   }
 
-  // ─── Stats ──────────────────────────────────────────────────────────────────
+  // ─── Rango de período (compartido entre getStats y getRegisteredEmployees) ──
+  // Las fechas se guardan como @db.Date (medianoche UTC). Calculamos los
+  // límites del período en UTC para que la comparación no dependa de la
+  // zona horaria del servidor (mismo bug que afectaba al frontend).
 
-  async getStats(processId: string, period: string) {
+  private resolvePeriodRange(period: string): { from: Date; to: Date } {
     const VALID_PERIODS = ['semanal', 'mensual', 'trimestral', 'anual'] as const;
     if (!VALID_PERIODS.includes(period as (typeof VALID_PERIODS)[number])) {
       throw new BadRequestException(
@@ -175,9 +178,6 @@ export class AbsenceService {
       );
     }
 
-    // Las fechas se guardan como @db.Date (medianoche UTC). Calculamos los
-    // límites del período en UTC para que la comparación no dependa de la
-    // zona horaria del servidor (mismo bug que afectaba al frontend).
     const today = new Date();
     today.setUTCHours(23, 59, 59, 999);
 
@@ -198,10 +198,47 @@ export class AbsenceService {
       from = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
     }
 
+    return { from, to: today };
+  }
+
+  // ─── Registered employees ───────────────────────────────────────────────────
+  // Directorio de colaboradores con registros de ausentismo en el período,
+  // para que la vista pública no dependa de buscar por nombre para saber
+  // quiénes han sido registrados.
+
+  async getRegisteredEmployees(processId: string, period: string) {
+    const { from, to } = this.resolvePeriodRange(period);
+
+    const records = await this.prisma.absenceRecord.findMany({
+      where: { processId, startDate: { gte: from, lte: to } },
+      select: { identification: true, employeeName: true, department: true },
+      orderBy: { startDate: 'desc' },
+    });
+
+    // Un registro por identificación, quedándose con el nombre/dependencia del
+    // más reciente dentro del período; cases cuenta cuántos registros tuvo.
+    const map = new Map<string, { identification: string; employeeName: string; department: string; cases: number }>();
+    for (const r of records) {
+      const entry = map.get(r.identification);
+      if (entry) {
+        entry.cases += 1;
+      } else {
+        map.set(r.identification, { ...r, cases: 1 });
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+  }
+
+  // ─── Stats ──────────────────────────────────────────────────────────────────
+
+  async getStats(processId: string, period: string) {
+    const { from, to } = this.resolvePeriodRange(period);
+
     const records = await this.prisma.absenceRecord.findMany({
       where: {
         processId,
-        startDate: { gte: from, lte: today },
+        startDate: { gte: from, lte: to },
       },
     });
 
@@ -254,7 +291,7 @@ export class AbsenceService {
 
     return {
       period,
-      dateRange: { from: toDateStr(from), to: toDateStr(today) },
+      dateRange: { from: toDateStr(from), to: toDateStr(to) },
       summary: { totalCases, totalDays },
       byDepartment,
       byStartWeekday,
