@@ -109,6 +109,8 @@ const textareaStyle: React.CSSProperties = {
   lineHeight: 1.5,
 };
 
+const ABSENCE_PAGE_SIZE = 5;
+
 // ── Dependencias hardcodeadas ─────────────────────────────────────────────────
 
 const DEPARTMENTS: { id: string; label: string; sub?: boolean }[] = [
@@ -575,6 +577,9 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Paginación de la tabla de ausencias registradas
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Campos del formulario
   const [identification, setIdentification] = useState('');
   const [employeeName, setEmployeeName] = useState('');
@@ -613,6 +618,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 
   useEffect(() => {
     loadAbsences();
+    setCurrentPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [processId, year]);
 
@@ -852,6 +858,15 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
     WebkitAppearance: 'none',
     appearance: 'none',
   };
+
+  const totalAbsencePages = Math.max(1, Math.ceil(absences.length / ABSENCE_PAGE_SIZE));
+  // Deriva la página válida en el render (en vez de corregir currentPage con un
+  // efecto) por si un borrado deja currentPage apuntando a una página que ya no existe.
+  const absencePage = Math.min(currentPage, totalAbsencePages);
+  const paginatedAbsences = absences.slice(
+    (absencePage - 1) * ABSENCE_PAGE_SIZE,
+    absencePage * ABSENCE_PAGE_SIZE,
+  );
 
   return (
     <>
@@ -1266,7 +1281,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
       </SectionCard>
 
       {/* ── Ausencias registradas ───────────────────────────────────────────── */}
-      <SectionCard title={`Ausencias registradas ${year}`}>
+      <SectionCard title={`Ausencias registradas ${year} (${absences.length})`}>
         {loadingAbsences ? (
           <div className="flex justify-center py-8">
             <LoadingSpinner />
@@ -1321,7 +1336,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 </tr>
               </thead>
               <tbody>
-                {absences.map(abs => {
+                {paginatedAbsences.map(abs => {
                   const isDeleting = deletingId === abs.id;
                   return (
                   <tr
@@ -1412,6 +1427,58 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Paginación */}
+        {!loadingAbsences && absences.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+              Mostrando {(absencePage - 1) * ABSENCE_PAGE_SIZE + 1}–{Math.min(absencePage * ABSENCE_PAGE_SIZE, absences.length)} de {absences.length} registros
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.max(1, absencePage - 1))}
+                disabled={absencePage === 1}
+                aria-label="Página anterior"
+                className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg transition-all"
+                style={{
+                  width: 36,
+                  height: 36,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  color: absencePage === 1 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.80)',
+                  cursor: absencePage === 1 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.70)', minWidth: 110, textAlign: 'center' }}>
+                Página {absencePage} de {totalAbsencePages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.min(totalAbsencePages, absencePage + 1))}
+                disabled={absencePage === totalAbsencePages}
+                aria-label="Página siguiente"
+                className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg transition-all"
+                style={{
+                  width: 36,
+                  height: 36,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  color: absencePage === totalAbsencePages ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.80)',
+                  cursor: absencePage === totalAbsencePages ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
         )}
       </SectionCard>
