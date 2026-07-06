@@ -62,6 +62,7 @@ interface Cie10Option {
 interface EmpOption {
   identification: string;
   employeeName: string;
+  department: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -690,10 +691,12 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
   const handleEmpSelect = (emp: EmpOption) => {
     setIdentification(emp.identification);
     setEmployeeName(emp.employeeName);
+    setDepartment(emp.department);
     setEmpQuery('');
     setEmpResults([]);
     setShowEmpDropdown(false);
     setActiveEmpField(null);
+    setFormErrors(p => ({ ...p, identification: false, employeeName: false, department: false }));
   };
 
   const handleSelectCie10 = (option: Cie10Option) => {
@@ -882,8 +885,13 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     <div className="px-4 py-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>Buscando...</div>
                   ) : empResults.map(emp => (
                     <button key={emp.identification} type="button" onClick={() => handleEmpSelect(emp)} className="w-full text-left px-4 py-2.5 transition-all" style={{ background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'block' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.10)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#D4AF37', marginRight: 8 }}>{emp.identification}</span>
-                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.80)' }}>{emp.employeeName}</span>
+                      <div>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#D4AF37', marginRight: 8 }}>{emp.identification}</span>
+                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.80)' }}>{emp.employeeName}</span>
+                      </div>
+                      {emp.department && (
+                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{emp.department}</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -915,8 +923,13 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
                     <div className="px-4 py-3" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>Buscando...</div>
                   ) : empResults.map(emp => (
                     <button key={emp.identification} type="button" onClick={() => handleEmpSelect(emp)} className="w-full text-left px-4 py-2.5 transition-all" style={{ background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'block' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.10)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#D4AF37', marginRight: 8 }}>{emp.identification}</span>
-                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.80)' }}>{emp.employeeName}</span>
+                      <div>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#D4AF37', marginRight: 8 }}>{emp.identification}</span>
+                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.80)' }}>{emp.employeeName}</span>
+                      </div>
+                      {emp.department && (
+                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{emp.department}</span>
+                      )}
                     </button>
                   ))}
                 </div>

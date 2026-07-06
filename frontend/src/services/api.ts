@@ -34,6 +34,7 @@ export interface PersonAbsenceStats {
 export interface EmployeeSearchResult {
   identification: string;
   employeeName: string;
+  department: string;
 }
 
 const api = axios.create({

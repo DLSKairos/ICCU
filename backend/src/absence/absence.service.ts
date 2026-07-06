@@ -144,8 +144,13 @@ export class AbsenceService {
 
   // ─── Employee search ────────────────────────────────────────────────────────
 
-  async searchEmployees(q: string): Promise<{ identification: string; employeeName: string }[]> {
+  async searchEmployees(
+    q: string,
+  ): Promise<{ identification: string; employeeName: string; department: string }[]> {
     if (!q || q.length < 2) return [];
+    // distinct por identificación, quedándose con el registro más reciente
+    // (createdAt desc dentro de cada identificación) para traer siempre el
+    // nombre y la dependencia vigentes de la persona.
     return this.prisma.absenceRecord.findMany({
       where: {
         OR: [
@@ -153,9 +158,9 @@ export class AbsenceService {
           { employeeName: { contains: q, mode: 'insensitive' } },
         ],
       },
-      select: { identification: true, employeeName: true },
-      distinct: ['identification', 'employeeName'],
-      orderBy: [{ identification: 'asc' }, { employeeName: 'asc' }],
+      select: { identification: true, employeeName: true, department: true },
+      distinct: ['identification'],
+      orderBy: [{ identification: 'asc' }, { createdAt: 'desc' }],
       take: 10,
     });
   }
