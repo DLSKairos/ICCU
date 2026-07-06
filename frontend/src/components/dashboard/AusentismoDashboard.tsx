@@ -16,6 +16,13 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 // ── Subcomponentes internos ──────────────────────────────────────────────────
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -587,7 +594,7 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
                 WebkitBackdropFilter: 'blur(16px) saturate(180%)',
                 border: '1px solid rgba(0,135,207,0.28)',
                 borderRadius: 12,
-                padding: registered.length > 0 ? 16 : '28px 24px',
+                padding: registered.length > 0 ? '4px 20px' : '28px 24px',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,1)',
               }}
             >
@@ -596,46 +603,61 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
                   No hay colaboradores registrados en este período.
                 </p>
               ) : (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
-                    gap: 10,
-                    maxHeight: 340,
-                    overflowY: 'auto',
-                    paddingRight: 4,
-                  }}
-                >
-                  {registered.map(emp => (
+                <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+                  {registered.map((emp, i) => (
                     <button
                       key={emp.identification}
                       onClick={() => handleSelectEmployee(emp)}
+                      className="w-full transition-colors"
                       style={{
                         display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        gap: 4,
+                        alignItems: 'center',
+                        gap: 14,
                         textAlign: 'left',
-                        background: 'rgba(19,65,116,0.04)',
-                        border: '1px solid rgba(19,65,116,0.10)',
-                        borderRadius: 10,
-                        padding: '10px 14px',
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: i < registered.length - 1 ? '1px solid rgba(19,65,116,0.08)' : 'none',
+                        padding: '12px 4px',
                         cursor: 'pointer',
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(212,175,55,0.10)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(212,175,55,0.35)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(19,65,116,0.04)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(19,65,116,0.10)'; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(212,175,55,0.06)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
                     >
-                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: '#134174', fontSize: 14, fontWeight: 600 }}>
-                        {emp.employeeName}
+                      {/* Avatar de iniciales */}
+                      <span
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          background: 'rgba(212,175,55,0.14)',
+                          border: '1px solid rgba(212,175,55,0.30)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          fontFamily: "'Antonio', sans-serif",
+                          color: '#D4AF37',
+                          fontSize: 13,
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        {getInitials(emp.employeeName)}
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(19,65,116,0.55)', fontSize: 12 }}>
+
+                      {/* Nombre + dependencia */}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontFamily: "'Roboto Condensed', sans-serif", color: '#134174', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {emp.employeeName}
+                        </p>
+                        <p style={{ fontFamily: "'Roboto Condensed', sans-serif", color: 'rgba(19,65,116,0.55)', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {emp.department}
-                        </span>
-                        <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: '#0087CF', background: 'rgba(0,135,207,0.10)', border: '1px solid rgba(0,135,207,0.22)', borderRadius: 6, padding: '1px 7px', fontSize: 11 }}>
-                          {emp.cases} caso{emp.cases !== 1 ? 's' : ''}
-                        </span>
+                        </p>
                       </div>
+
+                      {/* Casos */}
+                      <span style={{ fontFamily: "'Roboto Condensed', sans-serif", color: '#0087CF', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+                        {emp.cases} caso{emp.cases !== 1 ? 's' : ''}
+                      </span>
                     </button>
                   ))}
                 </div>
