@@ -265,7 +265,7 @@ function ProcessCard({ proc, year, onManage, isAbsence = false }: ProcessCardPro
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, canAccessProcess, loadingProfile } = useAuth();
 
   const [processes, setProcesses] = useState<AdminProcess[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,15 +296,21 @@ export default function AdminDashboardPage() {
     navigate('/admin', { replace: true });
   };
 
-  // Separar ausentismo de los procesos estándar
-  const absenceProcess = processes.find(p => p.type === 'AUSENTISMO') ?? null;
-  const standardProcesses = processes.filter(p => p.type !== 'AUSENTISMO');
+  // Un operador solo ve las provincias que tiene asignadas; el superadmin, todas.
+  const visibleProcesses = processes.filter(p => canAccessProcess(p.id));
 
-  // Métricas resumen — solo procesos estándar
+  // Separar ausentismo de los procesos estándar
+  const absenceProcess = visibleProcesses.find(p => p.type === 'AUSENTISMO') ?? null;
+  const standardProcesses = visibleProcesses.filter(p => p.type !== 'AUSENTISMO');
+
+  // Métricas resumen — solo los procesos estándar que el usuario ve
   const totalParametrized = standardProcesses.filter(getParametrizationStatus).length;
   const avgPct = standardProcesses.length
     ? Math.round(standardProcesses.reduce((s, p) => s + getPercentage(p), 0) / standardProcesses.length)
     : 0;
+
+  // Sin el perfil cargado no se sabe qué provincias mostrar: se mantiene el skeleton.
+  const isLoading = loading || loadingProfile;
 
   return (
     <div
@@ -388,7 +394,7 @@ export default function AdminDashboardPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Estado de error */}
-        {error && !loading && (
+        {error && !isLoading && (
           <ErrorMessage
             message={error}
             onRetry={loadProcesses}
@@ -396,7 +402,7 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Skeleton del resumen mientras carga */}
-        {loading && (
+        {isLoading && (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {[1, 2, 3, 4].map(i => (
@@ -417,7 +423,7 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Contenido cargado */}
-        {!loading && !error && (
+        {!isLoading && !error && (
           <>
             {/* Tarjetas resumen — excluyen ausentismo */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">

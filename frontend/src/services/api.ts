@@ -176,9 +176,18 @@ export const absenceApi = {
     api.get(`/absence/registered?processId=${encodeURIComponent(processId)}&period=${encodeURIComponent(period)}`).then(r => r.data),
 };
 
+export interface UserProfile {
+  username: string;
+  role: 'admin' | 'operador';
+  /** `null` = todos los procesos (superadmin). */
+  processes: string[] | null;
+}
+
 export const authApi = {
   login: (username: string, password: string) =>
     api.post('/auth/login', { username, password }).then(r => r.data),
+  me: (): Promise<UserProfile> =>
+    api.get('/auth/me').then(r => r.data),
 };
 
 export default api;

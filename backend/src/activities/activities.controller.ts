@@ -19,6 +19,10 @@ import { UpdateActivityDto } from './dto/update-activity.dto.js';
 import { CreateExecutionDto } from './dto/create-execution.dto.js';
 import { CreateSubactivityDto, CreateGlobalSubactivityDto } from './dto/create-subactivity.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { ProcessScopeGuard } from '../auth/guards/process-scope.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
+import { ProcessScope } from '../auth/decorators/process-scope.decorator.js';
 
 @Controller('activities')
 export class ActivitiesController {
@@ -44,19 +48,22 @@ export class ActivitiesController {
   // ─── Admin: crear / editar / borrar actividades ──────────────────────────────
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('body:processId')
   create(@Body() dto: CreateActivityDto) {
     return this.activitiesService.create(dto);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('activity:id')
   update(@Param('id') id: string, @Body() dto: UpdateActivityDto) {
     return this.activitiesService.update(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('activity:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
     return this.activitiesService.remove(id);
@@ -73,7 +80,8 @@ export class ActivitiesController {
   }
 
   @Post('subactivity/:subactivityId/executions')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('subactivity:subactivityId')
   createExecution(
     @Param('subactivityId') subactivityId: string,
     @Body() dto: CreateExecutionDto,
@@ -82,7 +90,8 @@ export class ActivitiesController {
   }
 
   @Delete('executions/:executionId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('execution:executionId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeExecution(@Param('executionId') executionId: string): Promise<void> {
     return this.activitiesService.removeExecution(executionId);
@@ -99,7 +108,8 @@ export class ActivitiesController {
   }
 
   @Patch('subactivity/:subactivityId/targets/:year')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('subactivity:subactivityId')
   upsertTarget(
     @Param('subactivityId') subactivityId: string,
     @Param('year', ParseIntPipe) year: number,
@@ -109,7 +119,8 @@ export class ActivitiesController {
   }
 
   @Patch('subactivity/:subactivityId/targets/:year/lock')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('subactivity:subactivityId')
   lockTarget(
     @Param('subactivityId') subactivityId: string,
     @Param('year', ParseIntPipe) year: number,
@@ -118,7 +129,8 @@ export class ActivitiesController {
   }
 
   @Patch('subactivity/:subactivityId/targets/:year/unlock')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('subactivity:subactivityId')
   unlockTarget(
     @Param('subactivityId') subactivityId: string,
     @Param('year', ParseIntPipe) year: number,
@@ -129,19 +141,24 @@ export class ActivitiesController {
   // ─── Admin: crear subactividades dinámicamente ───────────────────────────────
 
   @Post('subactivities')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('body:processId')
   createSubactivity(@Body() dto: CreateSubactivityDto) {
     return this.activitiesService.createSubactivityWithTarget(dto.processId, dto.name, dto.year, dto.target);
   }
 
+  // Crea la subactividad en TODOS los procesos: solo el superadmin, porque
+  // alcanza provincias fuera del ámbito de cualquier operador.
   @Post('subactivities/global')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   createGlobalSubactivity(@Body() dto: CreateGlobalSubactivityDto) {
     return this.activitiesService.createGlobalSubactivityWithTarget(dto.name, dto.year, dto.target);
   }
 
   @Delete('subactivities/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ProcessScopeGuard)
+  @ProcessScope('subactivity:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSubactivity(@Param('id') id: string): Promise<void> {
     return this.activitiesService.deleteSubactivity(id);

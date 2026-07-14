@@ -1511,7 +1511,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
 export default function AdminProvinciaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, canAccessProcess, loadingProfile } = useAuth();
 
   const [proc, setProc] = useState<AdminProcess | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1609,12 +1609,15 @@ export default function AdminProvinciaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Redirigir si el proceso es de ausentismo y el usuario no es admin
+  // Un operador solo entra a las provincias que tiene asignadas. Ausentismo no
+  // está en el alcance de ningún operador, así que este chequeo lo cubre también.
+  // Se espera a que el perfil cargue: antes de eso no se sabe qué puede ver.
   useEffect(() => {
-    if (proc && proc.type === 'AUSENTISMO' && !isAdmin) {
+    if (loadingProfile || !id) return;
+    if (!canAccessProcess(id)) {
       navigate('/admin/dashboard', { replace: true });
     }
-  }, [proc, isAdmin, navigate]);
+  }, [id, canAccessProcess, loadingProfile, navigate]);
 
   // ── Manejo de fotos ─────────────────────────────────────────────────────────
 
@@ -3318,7 +3321,8 @@ export default function AdminProvinciaPage() {
           )}
         </SectionCard>
 
-        {/* ── S5: Zona de peligro ───────────────────────────────────────────── */}
+        {/* ── S5: Zona de peligro — el reinicio anual es solo del superadmin ── */}
+        {isAdmin && (
         <SectionCard title="Zona de peligro" accent="danger">
           <p
             style={{
@@ -3371,6 +3375,7 @@ export default function AdminProvinciaPage() {
             Iniciar reinicio anual
           </button>
         </SectionCard>
+        )}
 
           </>
         )}

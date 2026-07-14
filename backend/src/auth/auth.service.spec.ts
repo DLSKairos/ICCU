@@ -31,24 +31,18 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+
+    // Todos los usuarios de users.config.ts tienen su hash configurado
+    mockConfigService.get.mockImplementation((key: string) => {
+      if (key.endsWith('_PASSWORD_HASH')) return '$2b$10$hashedpassword';
+      return undefined;
+    });
   });
 
   // ─── login ───────────────────────────────────────────────────────────────────
 
   describe('login(dto)', () => {
-    const validCredentials = {
-      username: 'admin',
-      password: 'secreto123',
-    };
-
-    beforeEach(() => {
-      // Configuración base: credenciales válidas
-      mockConfigService.get.mockImplementation((key: string) => {
-        if (key === 'ADMIN_USERNAME') return 'admin';
-        if (key === 'ADMIN_PASSWORD_HASH') return '$2b$10$hashedpassword';
-        return undefined;
-      });
-    });
+    const validCredentials = { username: 'iccu', password: 'secreto123' };
 
     it('should return accessToken when credentials are correct', async () => {
       (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -59,20 +53,54 @@ describe('AuthService', () => {
       expect(result).toEqual({ accessToken: 'jwt.token.aqui' });
     });
 
-    it('should call jwtService.sign with correct payload', async () => {
+    it('should sign the admin payload with role admin', async () => {
       (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockJwtService.sign.mockReturnValue('jwt.token.aqui');
 
       await service.login(validCredentials);
 
       expect(mockJwtService.sign).toHaveBeenCalledWith({
-        sub: 'admin',
-        username: 'admin',
+        sub: 'iccu',
+        username: 'iccu',
         role: 'admin',
       });
     });
 
-    it('should throw UnauthorizedException when username does not match ADMIN_USERNAME', async () => {
+    it('should sign the operador payload with role operador', async () => {
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockJwtService.sign.mockReturnValue('jwt.token.aqui');
+
+      await service.login({ username: 'sst', password: 'secreto123' });
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
+        sub: 'sst',
+        username: 'sst',
+        role: 'operador',
+      });
+    });
+
+    it('should NOT put the process scope in the token', async () => {
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockJwtService.sign.mockReturnValue('jwt.token.aqui');
+
+      await service.login({ username: 'bienestar', password: 'secreto123' });
+
+      const payload = mockJwtService.sign.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('processes');
+    });
+
+    it('should accept the username regardless of case', async () => {
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockJwtService.sign.mockReturnValue('jwt.token.aqui');
+
+      await service.login({ username: 'ICCU', password: 'secreto123' });
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ username: 'iccu' }),
+      );
+    });
+
+    it('should throw UnauthorizedException when the user does not exist', async () => {
       await expect(
         service.login({ username: 'hacker', password: 'secreto123' }),
       ).rejects.toThrow(UnauthorizedException);
@@ -80,7 +108,15 @@ describe('AuthService', () => {
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when password hash does not match', async () => {
+    it('should not call bcrypt.compare when the user does not exist', async () => {
+      await expect(
+        service.login({ username: 'otro', password: 'secreto123' }),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockedBcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when the password is wrong', async () => {
       (mockedBcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login(validCredentials)).rejects.toThrow(
@@ -90,41 +126,47 @@ describe('AuthService', () => {
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when ADMIN_USERNAME is not configured', async () => {
+    it('should throw UnauthorizedException when the password hash is not configured', async () => {
       mockConfigService.get.mockReturnValue(undefined);
 
       await expect(service.login(validCredentials)).rejects.toThrow(
         UnauthorizedException,
       );
     });
+  });
 
-    it('should throw UnauthorizedException when ADMIN_PASSWORD_HASH is not configured', async () => {
-      mockConfigService.get.mockImplementation((key: string) => {
-        if (key === 'ADMIN_USERNAME') return 'admin';
-        if (key === 'ADMIN_PASSWORD_HASH') return undefined;
-        return undefined;
+  // ─── getProfile ──────────────────────────────────────────────────────────────
+
+  describe('getProfile(username)', () => {
+    it('should return processes = null for the superadmin', () => {
+      expect(service.getProfile('iccu')).toEqual({
+        username: 'iccu',
+        role: 'admin',
+        processes: null,
       });
-
-      await expect(service.login(validCredentials)).rejects.toThrow(
-        UnauthorizedException,
-      );
     });
 
-    it('should not call bcrypt.compare when username is wrong', async () => {
-      await expect(
-        service.login({ username: 'otro', password: 'secreto123' }),
-      ).rejects.toThrow(UnauthorizedException);
+    it('should return only the assigned processes for an operador', () => {
+      const profile = service.getProfile('sst');
 
-      expect(mockedBcrypt.compare).not.toHaveBeenCalled();
+      expect(profile.role).toBe('operador');
+      expect(profile.processes).toContain('dia-salud-sst');
+      // Ausentismo es exclusivo del superadmin
+      expect(profile.processes).not.toContain('medicina-preventiva');
     });
 
-    it('should return accessToken as string', async () => {
-      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockJwtService.sign.mockReturnValue('signed.token');
+    it('should share salud-mental and capacitaciones between both operadores', () => {
+      const sst = service.getProfile('sst').processes!;
+      const bienestar = service.getProfile('bienestar').processes!;
 
-      const result = await service.login(validCredentials);
+      for (const shared of ['salud-mental', 'capacitaciones']) {
+        expect(sst).toContain(shared);
+        expect(bienestar).toContain(shared);
+      }
+    });
 
-      expect(typeof result.accessToken).toBe('string');
+    it('should throw UnauthorizedException for an unknown user', () => {
+      expect(() => service.getProfile('fantasma')).toThrow(UnauthorizedException);
     });
   });
 });
