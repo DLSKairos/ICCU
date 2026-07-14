@@ -37,6 +37,19 @@ export interface EmployeeSearchResult {
   department: string;
 }
 
+export interface ActivityDetail {
+  id: string;
+  processId: string;
+  subactivityId: string;
+  title: string;
+  description: string;
+  message: string;
+  date: string;
+  attendees: number;
+  departments: string[];
+  photos: { id: string; url: string }[];
+}
+
 export interface RegisteredEmployee {
   identification: string;
   employeeName: string;
@@ -90,6 +103,8 @@ export const adminApi = {
     api.patch(`/activities/subactivity/${subactivityId}/targets/${year}`, { target }).then(r => r.data),
   lockTargets: (subactivityId: string, year: number) =>
     api.patch(`/activities/subactivity/${subactivityId}/targets/${year}/lock`).then(r => r.data),
+  unlockTargets: (subactivityId: string, year: number) =>
+    api.patch(`/activities/subactivity/${subactivityId}/targets/${year}/unlock`).then(r => r.data),
   createSubactivity: (processId: string, name: string, year: number, target: number) =>
     api.post('/activities/subactivities', { processId, name, year, target }).then(r => r.data),
   createGlobalActivity: (name: string, year: number, target: number) =>
@@ -107,6 +122,20 @@ export const adminApi = {
     departments: string[];
   }) =>
     api.post('/activities', data).then(r => r.data),
+  // Devuelve la actividad con sus fotos completas ({id, url}), a diferencia del
+  // detalle del proceso que solo trae las URLs. El id es necesario para borrarlas.
+  getActivity: (id: string): Promise<ActivityDetail> =>
+    api.get(`/activities/${id}`).then(r => r.data),
+  updateActivity: (id: string, data: {
+    subactivityId?: string;
+    title?: string;
+    description?: string;
+    message?: string;
+    date?: string;
+    attendees?: number;
+    departments?: string[];
+  }) =>
+    api.patch(`/activities/${id}`, data).then(r => r.data),
   uploadActivityPhoto: (activityId: string, file: File) => {
     const fd = new FormData();
     fd.append('file', file);
@@ -118,6 +147,8 @@ export const adminApi = {
   },
   deleteActivity: (id: string) =>
     api.delete(`/activities/${id}`),
+  deleteActivityPhoto: (photoId: string) =>
+    api.delete(`/upload/photos/${photoId}`),
   resetPreview: (year: number) =>
     api.get(`/annual-reset/preview?year=${year}`).then(r => r.data),
   resetYear: (yearToClose: number) =>

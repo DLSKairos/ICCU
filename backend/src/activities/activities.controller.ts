@@ -117,6 +117,15 @@ export class ActivitiesController {
     return this.activitiesService.lockTarget(subactivityId, year);
   }
 
+  @Patch('subactivity/:subactivityId/targets/:year/unlock')
+  @UseGuards(JwtAuthGuard)
+  unlockTarget(
+    @Param('subactivityId') subactivityId: string,
+    @Param('year', ParseIntPipe) year: number,
+  ) {
+    return this.activitiesService.unlockTarget(subactivityId, year);
+  }
+
   // ─── Admin: crear subactividades dinámicamente ───────────────────────────────
 
   @Post('subactivities')

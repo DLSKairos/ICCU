@@ -1528,13 +1528,29 @@ export default function AdminProvinciaPage() {
   const [actMessage, setActMessage] = useState('');
   const [actDate, setActDate] = useState('');
   const [attendeesByDep, setAttendeesByDep] = useState<Record<string, number>>({});
+  // Total y dependencias que se envían al backend. El desglose por dependencia no
+  // se persiste (Activity solo guarda attendees y departments), así que al editar
+  // se cargan estos dos valores y attendeesByDep queda vacío hasta que el admin
+  // vuelva a capturar el desglose.
+  const [actAttendees, setActAttendees] = useState(0);
+  const [actDepartments, setActDepartments] = useState<string[]>([]);
   const [showAttendeesModal, setShowAttendeesModal] = useState(false);
   const [modalDepDraft, setModalDepDraft] = useState<Record<string, number>>({});
   const [actPhotos, setActPhotos] = useState<File[]>([]);
   const [actPhotosPreviews, setActPhotosPreviews] = useState<string[]>([]);
   const [creatingActivity, setCreatingActivity] = useState(false);
-  const [createSuccess, setCreateSuccess] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Edición de una actividad ya registrada
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [existingPhotos, setExistingPhotos] = useState<{ id: string; url: string }[]>([]);
+  const [photosToDelete, setPhotosToDelete] = useState<string[]>([]);
+  const activityFormRef = useRef<HTMLDivElement>(null);
+
+  // Desbloqueo de una meta ya confirmada
+  const [unlockingSubId, setUnlockingSubId] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{
     subactivity?: boolean;
     title?: boolean;
@@ -1624,6 +1640,13 @@ export default function AdminProvinciaPage() {
     });
   };
 
+  // Las fotos ya subidas se marcan y se borran al guardar, no al hacer clic: así
+  // cancelar la edición no deja fotos perdidas en Cloudinary.
+  const removeExistingPhoto = (photoId: string) => {
+    setExistingPhotos(prev => prev.filter(p => p.id !== photoId));
+    setPhotosToDelete(prev => [...prev, photoId]);
+  };
+
   // ── Guardar metas ───────────────────────────────────────────────────────────
 
   const handleSaveTargets = async () => {
@@ -1648,9 +1671,60 @@ export default function AdminProvinciaPage() {
     }
   };
 
-  // ── Registrar actividad ─────────────────────────────────────────────────────
+  // ── Registrar / editar actividad ────────────────────────────────────────────
 
-  const handleCreateActivity = async (e: FormEvent) => {
+  const resetActivityForm = () => {
+    setActSubactivity('');
+    setActTitle('');
+    setActDescription('');
+    setActMessage('');
+    setActDate('');
+    setAttendeesByDep({});
+    setActAttendees(0);
+    setActDepartments([]);
+    setActPhotos([]);
+    setActPhotosPreviews(prev => {
+      prev.forEach(url => URL.revokeObjectURL(url));
+      return [];
+    });
+    setExistingPhotos([]);
+    setPhotosToDelete([]);
+    setEditingActivityId(null);
+    setFormErrors({});
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleEditActivity = async (activityId: string) => {
+    setLoadingActivity(true);
+    setCreateError(null);
+    setCreateSuccess(null);
+    try {
+      const activity = await adminApi.getActivity(activityId);
+      resetActivityForm();
+      setEditingActivityId(activity.id);
+      setActSubactivity(activity.subactivityId);
+      setActTitle(activity.title);
+      setActDescription(activity.description ?? '');
+      setActMessage(activity.message ?? '');
+      setActDate(activity.date?.substring(0, 10) ?? '');
+      setActAttendees(activity.attendees ?? 0);
+      setActDepartments(activity.departments ?? []);
+      setExistingPhotos(activity.photos ?? []);
+      activityFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {
+      setCreateError('No se pudo cargar la actividad para editar. Intenta de nuevo.');
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const handleCancelEditActivity = () => {
+    resetActivityForm();
+    setCreateError(null);
+    setCreateSuccess(null);
+  };
+
+  const handleSubmitActivity = async (e: FormEvent) => {
     e.preventDefault();
 
     // Validación inline
@@ -1667,15 +1741,12 @@ export default function AdminProvinciaPage() {
     setFormErrors({});
     setCreatingActivity(true);
     setCreateError(null);
-    setCreateSuccess(false);
+    setCreateSuccess(null);
     setUploadProgress(0);
 
-    const totalAtt = Object.values(attendeesByDep).reduce((s, v) => s + (v || 0), 0);
-    const departments = DEPARTMENTS
-      .filter(d => (attendeesByDep[d.id] || 0) > 0)
-      .map(d => d.label);
+    const isEditing = editingActivityId !== null;
 
-    // Simula progreso de upload si hay fotos
+    // Simula progreso de upload si hay fotos nuevas
     let progressInterval: ReturnType<typeof setInterval> | null = null;
     if (actPhotos.length > 0) {
       progressInterval = setInterval(() => {
@@ -1684,34 +1755,34 @@ export default function AdminProvinciaPage() {
     }
 
     try {
-      // 1) Crear la actividad (JSON). 2) Subir las fotos aparte al endpoint de upload.
-      const activity = await adminApi.createActivity({
-        processId: proc!.id,
+      const fields = {
         subactivityId: actSubactivity,
         title: actTitle,
         description: actDescription,
         message: actMessage,
         date: actDate,
-        attendees: totalAtt,
-        departments,
-      });
+        attendees: actAttendees,
+        departments: actDepartments,
+      };
+
+      // 1) Guardar la actividad (JSON). 2) Fotos aparte contra el endpoint de upload.
+      const activityId = isEditing
+        ? (await adminApi.updateActivity(editingActivityId, fields)).id
+        : (await adminApi.createActivity({ processId: proc!.id, ...fields })).id;
+
+      for (const photoId of photosToDelete) {
+        await adminApi.deleteActivityPhoto(photoId);
+      }
       for (const photo of actPhotos) {
-        await adminApi.uploadActivityPhoto(activity.id, photo);
+        await adminApi.uploadActivityPhoto(activityId, photo);
       }
       if (progressInterval) clearInterval(progressInterval);
       setUploadProgress(100);
 
-      setCreateSuccess(true);
-      // Limpiar formulario
-      setActSubactivity('');
-      setActTitle('');
-      setActDescription('');
-      setActMessage('');
-      setActDate('');
-      setAttendeesByDep({});
-      setActPhotos([]);
-      setActPhotosPreviews([]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setCreateSuccess(
+        isEditing ? 'Cambios guardados correctamente.' : 'Actividad registrada correctamente.',
+      );
+      resetActivityForm();
       loadProcess();
     } catch (err) {
       if (progressInterval) clearInterval(progressInterval);
@@ -1722,11 +1793,29 @@ export default function AdminProvinciaPage() {
         ?.response?.data?.message;
       setCreateError(
         backendMsg ??
-          'Error al registrar la actividad. Verifica los datos e intenta de nuevo.',
+          (isEditing
+            ? 'Error al guardar los cambios. Verifica los datos e intenta de nuevo.'
+            : 'Error al registrar la actividad. Verifica los datos e intenta de nuevo.'),
       );
     } finally {
       setCreatingActivity(false);
       setTimeout(() => setUploadProgress(0), 1500);
+    }
+  };
+
+  // ── Reabrir una meta confirmada ─────────────────────────────────────────────
+
+  const handleUnlockTarget = async (subactivityId: string) => {
+    setUnlockingSubId(subactivityId);
+    setTargetsError(null);
+    setTargetsSuccess(false);
+    try {
+      await adminApi.unlockTargets(subactivityId, year);
+      loadProcess();
+    } catch {
+      setTargetsError('No se pudo habilitar la meta para edición. Intenta de nuevo.');
+    } finally {
+      setUnlockingSubId(null);
     }
   };
 
@@ -1739,6 +1828,7 @@ export default function AdminProvinciaPage() {
       if (deleteTarget.kind === 'activity') {
         setDeletingId(deleteTarget.id);
         await adminApi.deleteActivity(deleteTarget.id);
+        if (editingActivityId === deleteTarget.id) resetActivityForm();
       } else {
         setDeletingSubId(deleteTarget.id);
         await adminApi.deleteSubactivity(deleteTarget.id);
@@ -1943,7 +2033,14 @@ export default function AdminProvinciaPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setAttendeesByDep({ ...modalDepDraft }); setShowAttendeesModal(false); }}
+                  onClick={() => {
+                    setAttendeesByDep({ ...modalDepDraft });
+                    setActAttendees(Object.values(modalDepDraft).reduce((s, v) => s + (v || 0), 0));
+                    setActDepartments(
+                      DEPARTMENTS.filter(d => (modalDepDraft[d.id] || 0) > 0).map(d => d.label),
+                    );
+                    setShowAttendeesModal(false);
+                  }}
                   className="flex-1 rounded-xl font-semibold cursor-pointer"
                   style={{ height: 48, background: '#0087CF', border: 'none', color: '#fff', fontFamily: "'Antonio', sans-serif", fontSize: '1rem', letterSpacing: '0.06em', boxShadow: '0 4px 16px rgba(0,135,207,0.30)' }}
                 >
@@ -2331,6 +2428,21 @@ export default function AdminProvinciaPage() {
                       {sub.target || 0}
                     </span>
                     <button
+                      onClick={() => handleUnlockTarget(sub.id)}
+                      disabled={unlockingSubId === sub.id}
+                      className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
+                      style={{ width: 36, height: 44, background: 'rgba(212,175,55,0.10)', border: '1px solid rgba(212,175,55,0.25)', color: '#D4AF37', opacity: unlockingSubId === sub.id ? 0.5 : 1 }}
+                      title="Editar meta"
+                    >
+                      {unlockingSubId === sub.id ? (
+                        <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(212,175,55,0.3)', borderTopColor: '#D4AF37' }} />
+                      ) : (
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                          <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
                       onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
                       disabled={deletingSubId === sub.id}
                       className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
@@ -2398,6 +2510,13 @@ export default function AdminProvinciaPage() {
             {targetsError && <FeedbackBanner type="error" message={targetsError} />}
 
             {hasUnlockedSubs && (
+              <p style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.40)', lineHeight: 1.5 }}>
+                Al confirmar, las metas quedan bloqueadas de nuevo. Cambiar una meta ya confirmada
+                recalcula el porcentaje de avance de {year}.
+              </p>
+            )}
+
+            {hasUnlockedSubs && (
               <button
                 onClick={handleSaveTargets}
                 disabled={savingTargets}
@@ -2419,16 +2538,17 @@ export default function AdminProvinciaPage() {
                   <path d="M20 6L9 17l-5-5" stroke="#4ade80" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <p style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 14, color: '#86efac' }}>
-                  Todas las metas están confirmadas para {year}.
+                  Todas las metas están confirmadas para {year}. Usa el lápiz para corregir una meta.
                 </p>
               </div>
             )}
           </div>
         </SectionCard>
 
-        {/* ── S3: Registrar actividad ───────────────────────────────────────── */}
-        <SectionCard title="Registrar actividad">
-          <form onSubmit={handleCreateActivity} noValidate>
+        {/* ── S3: Registrar / editar actividad ───────────────────────────────── */}
+        <div ref={activityFormRef} style={{ scrollMarginTop: 88 }}>
+        <SectionCard title={editingActivityId ? 'Editar actividad registrada' : 'Registrar actividad'}>
+          <form onSubmit={handleSubmitActivity} noValidate>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               {/* Subactividad */}
@@ -2586,13 +2706,14 @@ export default function AdminProvinciaPage() {
                     <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth={1.8} />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
                   </svg>
-                  {Object.values(attendeesByDep).some(v => v > 0)
+                  {actAttendees > 0 || actDepartments.length > 0
                     ? 'Editar asistentes por dependencia'
                     : 'Agregar asistentes por dependencia'}
                 </button>
 
-                {/* Resumen inline */}
-                {DEPARTMENTS.some(d => (attendeesByDep[d.id] || 0) > 0) && (
+                {/* Resumen inline: con desglose si se capturó en esta sesión; si se
+                    está editando y aún no se ha recapturado, solo las dependencias. */}
+                {DEPARTMENTS.some(d => (attendeesByDep[d.id] || 0) > 0) ? (
                   <div className="mt-2 flex flex-col gap-1">
                     {DEPARTMENTS.filter(d => (attendeesByDep[d.id] || 0) > 0).map(d => (
                       <div key={d.id} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -2601,7 +2722,15 @@ export default function AdminProvinciaPage() {
                       </div>
                     ))}
                   </div>
-                )}
+                ) : actDepartments.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {actDepartments.map(label => (
+                      <span key={label} className="inline-block px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', fontFamily: "'Roboto Condensed', sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
 
                 {/* Total */}
                 <div className="mt-3">
@@ -2611,7 +2740,7 @@ export default function AdminProvinciaPage() {
                     style={{ height: 48, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)' }}
                   >
                     <span style={{ fontFamily: "'Antonio', sans-serif", fontSize: '1.4rem', color: '#D4AF37', lineHeight: 1 }}>
-                      {Object.values(attendeesByDep).reduce((s, v) => s + (v || 0), 0) || 0}
+                      {actAttendees}
                     </span>
                     <span style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
                       asistentes en total
@@ -2623,6 +2752,42 @@ export default function AdminProvinciaPage() {
               {/* Zona de fotos con drag and drop */}
               <div className="sm:col-span-2">
                 <label style={labelStyle}>Fotos</label>
+
+                {/* Fotos ya guardadas (solo en edición) */}
+                {existingPhotos.length > 0 && (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-3">
+                    {existingPhotos.map(photo => (
+                      <div
+                        key={photo.id}
+                        className="relative rounded-lg overflow-hidden border"
+                        style={{ aspectRatio: '1', borderColor: 'rgba(212,175,55,0.22)' }}
+                      >
+                        <img src={photo.url} alt="Foto de la actividad" className="w-full h-full object-cover" loading="lazy" />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingPhoto(photo.id)}
+                          className="absolute top-1 right-1 flex items-center justify-center rounded-full cursor-pointer"
+                          style={{ width: 22, height: 22, background: 'rgba(14,0,0,0.75)', border: '1px solid rgba(224,9,20,0.6)', color: '#fff' }}
+                          aria-label="Quitar esta foto"
+                          title="Quitar esta foto"
+                        >
+                          <svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {photosToDelete.length > 0 && (
+                  <p
+                    className="mb-3"
+                    style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 12, color: '#ff9aa2' }}
+                  >
+                    {photosToDelete.length} foto{photosToDelete.length !== 1 ? 's' : ''} se eliminará{photosToDelete.length !== 1 ? 'n' : ''} al guardar los cambios.
+                  </p>
+                )}
 
                 <input
                   ref={fileInputRef}
@@ -2792,7 +2957,7 @@ export default function AdminProvinciaPage() {
 
             {createSuccess && (
               <div className="mt-4">
-                <FeedbackBanner type="success" message="Actividad registrada correctamente." />
+                <FeedbackBanner type="success" message={createSuccess} />
               </div>
             )}
             {createError && (
@@ -2801,49 +2966,75 @@ export default function AdminProvinciaPage() {
               </div>
             )}
 
-            {/* Botón registrar */}
-            <button
-              type="submit"
-              disabled={creatingActivity}
-              className="w-full rounded-xl font-semibold mt-5 transition-all"
-              style={{
-                height: 52,
-                background: creatingActivity ? 'rgba(0,135,207,0.30)' : '#0087CF',
-                border: 'none',
-                color: '#fff',
-                fontFamily: "'Antonio', sans-serif",
-                fontSize: '1.05rem',
-                letterSpacing: '0.06em',
-                cursor: creatingActivity ? 'not-allowed' : 'pointer',
-                boxShadow: creatingActivity ? 'none' : '0 4px 16px rgba(0,135,207,0.28)',
-              }}
-              onMouseEnter={e => {
-                if (!creatingActivity) {
-                  e.currentTarget.style.background = '#0099e6';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,135,207,0.40)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!creatingActivity) {
-                  e.currentTarget.style.background = '#0087CF';
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,135,207,0.28)';
-                }
-              }}
-            >
-              {creatingActivity ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span
-                    className="inline-block rounded-full border-2 animate-spin"
-                    style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}
-                  />
-                  Registrando...
-                </span>
-              ) : (
-                'Registrar actividad'
+            {/* Botones: guardar / cancelar edición */}
+            <div className="flex gap-3 mt-5">
+              {editingActivityId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEditActivity}
+                  disabled={creatingActivity}
+                  className="rounded-xl font-semibold transition-all"
+                  style={{
+                    height: 52,
+                    padding: '0 24px',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                    color: 'rgba(255,255,255,0.65)',
+                    fontFamily: "'Antonio', sans-serif",
+                    fontSize: '1.05rem',
+                    letterSpacing: '0.06em',
+                    cursor: creatingActivity ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Cancelar edición
+                </button>
               )}
-            </button>
+              <button
+                type="submit"
+                disabled={creatingActivity || loadingActivity}
+                className="flex-1 rounded-xl font-semibold transition-all"
+                style={{
+                  height: 52,
+                  background: creatingActivity ? 'rgba(0,135,207,0.30)' : '#0087CF',
+                  border: 'none',
+                  color: '#fff',
+                  fontFamily: "'Antonio', sans-serif",
+                  fontSize: '1.05rem',
+                  letterSpacing: '0.06em',
+                  cursor: creatingActivity ? 'not-allowed' : 'pointer',
+                  boxShadow: creatingActivity ? 'none' : '0 4px 16px rgba(0,135,207,0.28)',
+                }}
+                onMouseEnter={e => {
+                  if (!creatingActivity) {
+                    e.currentTarget.style.background = '#0099e6';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,135,207,0.40)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!creatingActivity) {
+                    e.currentTarget.style.background = '#0087CF';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,135,207,0.28)';
+                  }
+                }}
+              >
+                {creatingActivity ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span
+                      className="inline-block rounded-full border-2 animate-spin"
+                      style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}
+                    />
+                    {editingActivityId ? 'Guardando...' : 'Registrando...'}
+                  </span>
+                ) : editingActivityId ? (
+                  'Guardar cambios'
+                ) : (
+                  'Registrar actividad'
+                )}
+              </button>
+            </div>
           </form>
         </SectionCard>
+        </div>
 
         {/* ── S4: Actividades registradas ───────────────────────────────────── */}
         <SectionCard title={`Actividades registradas (${allActivities.length})`}>
@@ -2886,14 +3077,23 @@ export default function AdminProvinciaPage() {
                 const subName = proc.subactivities.find(s => s.id === act.subactivityId)?.name ?? '';
                 const photos: string[] = Array.isArray(act.photos) ? act.photos : [];
                 const isDeleting = deletingId === act.id;
+                const isEditing = editingActivityId === act.id;
 
                 return (
                   <div
                     key={act.id}
                     className="rounded-xl border p-4 transition-all"
                     style={{
-                      background: isDeleting ? 'rgba(224,9,20,0.06)' : 'rgba(255,255,255,0.04)',
-                      borderColor: isDeleting ? 'rgba(224,9,20,0.25)' : 'rgba(255,255,255,0.07)',
+                      background: isDeleting
+                        ? 'rgba(224,9,20,0.06)'
+                        : isEditing
+                          ? 'rgba(212,175,55,0.07)'
+                          : 'rgba(255,255,255,0.04)',
+                      borderColor: isDeleting
+                        ? 'rgba(224,9,20,0.25)'
+                        : isEditing
+                          ? 'rgba(212,175,55,0.30)'
+                          : 'rgba(255,255,255,0.07)',
                       opacity: isDeleting ? 0.7 : 1,
                     }}
                   >
@@ -2956,6 +3156,53 @@ export default function AdminProvinciaPage() {
                         </div>
                       </div>
 
+                      <div className="flex gap-2 shrink-0">
+
+                      {/* Botón editar */}
+                      <button
+                        onClick={() => handleEditActivity(act.id)}
+                        disabled={isDeleting || loadingActivity}
+                        title="Editar actividad"
+                        aria-label={`Editar actividad: ${act.title}`}
+                        className="shrink-0 flex items-center justify-center rounded-lg transition-all"
+                        style={{
+                          width: 40,
+                          height: 40,
+                          background: isEditing ? 'rgba(212,175,55,0.22)' : 'rgba(212,175,55,0.08)',
+                          border: '1px solid rgba(212,175,55,0.25)',
+                          color: '#D4AF37',
+                          cursor: isDeleting || loadingActivity ? 'not-allowed' : 'pointer',
+                          opacity: isDeleting ? 0.5 : 1,
+                        }}
+                        onMouseEnter={e => {
+                          if (!isDeleting && !loadingActivity) {
+                            e.currentTarget.style.background = 'rgba(212,175,55,0.22)';
+                            e.currentTarget.style.borderColor = 'rgba(212,175,55,0.50)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = isEditing ? 'rgba(212,175,55,0.22)' : 'rgba(212,175,55,0.08)';
+                          e.currentTarget.style.borderColor = 'rgba(212,175,55,0.25)';
+                        }}
+                      >
+                        {loadingActivity && isEditing ? (
+                          <span
+                            className="inline-block rounded-full border-2 animate-spin"
+                            style={{ width: 14, height: 14, borderColor: 'rgba(212,175,55,0.25)', borderTopColor: '#D4AF37' }}
+                          />
+                        ) : (
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </button>
+
                       {/* Botón eliminar con ícono papelera */}
                       <button
                         onClick={() => setDeleteTarget({ kind: 'activity', id: act.id, name: act.title })}
@@ -3000,6 +3247,8 @@ export default function AdminProvinciaPage() {
                           </svg>
                         )}
                       </button>
+
+                      </div>
                     </div>
 
                     {/* Miniaturas de fotos */}

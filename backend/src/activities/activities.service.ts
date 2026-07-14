@@ -120,9 +120,10 @@ export class ActivitiesService {
   }
 
   async update(id: string, dto: UpdateActivityDto) {
-    await this.findOne(id);
+    const activity = await this.findOne(id);
 
     const updateData: {
+      subactivityId?: string;
       title?: string;
       description?: string;
       message?: string;
@@ -144,10 +145,38 @@ export class ActivitiesService {
       updateData.year = date.getFullYear();
     }
 
-    return this.prisma.activity.update({
-      where: { id },
-      data: updateData,
-      include: { photos: true },
+    if (dto.subactivityId !== undefined && dto.subactivityId !== activity.subactivityId) {
+      const subactivity = await this.prisma.subactivity.findUnique({
+        where: { id: dto.subactivityId },
+      });
+      if (!subactivity || subactivity.processId !== activity.processId) {
+        throw new BadRequestException(
+          `Subactividad '${dto.subactivityId}' no pertenece al proceso '${activity.processId}'`,
+        );
+      }
+      updateData.subactivityId = dto.subactivityId;
+    }
+
+    // La ejecución ligada es la que alimenta el avance vs meta: si la actividad
+    // cambia de subactividad o de fecha, la ejecución debe seguirla o el avance
+    // quedaría contabilizado en la subactividad/año equivocados.
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.activity.update({
+        where: { id },
+        data: updateData,
+        include: { photos: true },
+      });
+
+      await tx.execution.updateMany({
+        where: { activityId: id },
+        data: {
+          subactivityId: updated.subactivityId,
+          date: updated.date,
+          year: updated.year,
+        },
+      });
+
+      return updated;
     });
   }
 
@@ -270,6 +299,25 @@ export class ActivitiesService {
     return this.prisma.annualTarget.update({
       where: { subactivityId_year: { subactivityId, year } },
       data: { isLocked: true },
+    });
+  }
+
+  // Reabre una meta ya confirmada para corregirla. Es una acción explícita del
+  // admin: los porcentajes ya calculados se recalculan contra la meta nueva.
+  async unlockTarget(subactivityId: string, year: number) {
+    const existing = await this.prisma.annualTarget.findUnique({
+      where: { subactivityId_year: { subactivityId, year } },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(
+        `No existe meta para la subactividad '${subactivityId}' en ${year}`,
+      );
+    }
+
+    return this.prisma.annualTarget.update({
+      where: { subactivityId_year: { subactivityId, year } },
+      data: { isLocked: false },
     });
   }
 

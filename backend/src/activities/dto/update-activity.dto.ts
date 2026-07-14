@@ -1,5 +1,6 @@
 import {
   IsString,
+  IsNotEmpty,
   IsOptional,
   IsInt,
   IsArray,
@@ -11,6 +12,11 @@ import {
 import { Type } from 'class-transformer';
 
 export class UpdateActivityDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  subactivityId?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(200)

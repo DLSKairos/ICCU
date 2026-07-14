@@ -32,8 +32,13 @@ const mockPrisma = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
     delete: jest.fn(),
   },
+  // El servicio ejecuta las escrituras compuestas (actividad + su ejecución)
+  // dentro de una transacción: el mock la resuelve con el mismo cliente.
+  $transaction: jest.fn((cb: (tx: typeof mockPrisma) => unknown) => cb(mockPrisma)),
 };
 
 describe('ActivitiesService', () => {
@@ -274,6 +279,108 @@ describe('ActivitiesService', () => {
         }),
       );
       expect(result.isLocked).toBe(true);
+    });
+  });
+
+  // ─── unlockTarget ────────────────────────────────────────────────────────────
+
+  describe('unlockTarget(subactivityId, year)', () => {
+    it('should throw NotFoundException when target does not exist', async () => {
+      mockPrisma.annualTarget.findUnique.mockResolvedValue(null);
+
+      await expect(service.unlockTarget('pa-sesiones', 2025)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should reopen a locked target for editing', async () => {
+      mockPrisma.annualTarget.findUnique.mockResolvedValue({
+        id: 'uuid-1',
+        subactivityId: 'pa-sesiones',
+        year: 2025,
+        target: 100,
+        isLocked: true,
+      });
+      mockPrisma.annualTarget.update.mockResolvedValue({
+        id: 'uuid-1',
+        isLocked: false,
+      });
+
+      const result = await service.unlockTarget('pa-sesiones', 2025);
+
+      expect(mockPrisma.annualTarget.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { isLocked: false },
+        }),
+      );
+      expect(result.isLocked).toBe(false);
+    });
+  });
+
+  // ─── update ──────────────────────────────────────────────────────────────────
+
+  describe('update(id, dto)', () => {
+    const existing = {
+      id: 'act-1',
+      processId: 'sst',
+      subactivityId: 'sst-cap',
+      year: 2025,
+      date: new Date('2025-03-10'),
+      photos: [],
+    };
+
+    it('should sync the linked execution when the date changes', async () => {
+      mockPrisma.activity.findUnique.mockResolvedValue(existing);
+      mockPrisma.activity.update.mockResolvedValue({
+        ...existing,
+        year: 2026,
+        date: new Date('2026-01-15'),
+      });
+
+      await service.update('act-1', { date: '2026-01-15' });
+
+      expect(mockPrisma.execution.updateMany).toHaveBeenCalledWith({
+        where: { activityId: 'act-1' },
+        data: {
+          subactivityId: 'sst-cap',
+          date: new Date('2026-01-15'),
+          year: 2026,
+        },
+      });
+    });
+
+    it('should move the execution when the subactivity changes', async () => {
+      mockPrisma.activity.findUnique.mockResolvedValue(existing);
+      mockPrisma.subactivity.findUnique.mockResolvedValue({
+        id: 'sst-insp',
+        processId: 'sst',
+      });
+      mockPrisma.activity.update.mockResolvedValue({
+        ...existing,
+        subactivityId: 'sst-insp',
+      });
+
+      await service.update('act-1', { subactivityId: 'sst-insp' });
+
+      expect(mockPrisma.execution.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ subactivityId: 'sst-insp' }),
+        }),
+      );
+    });
+
+    it('should throw BadRequestException when the subactivity belongs to another process', async () => {
+      mockPrisma.activity.findUnique.mockResolvedValue(existing);
+      mockPrisma.subactivity.findUnique.mockResolvedValue({
+        id: 'pa-sesiones',
+        processId: 'pausas-activas',
+      });
+
+      await expect(
+        service.update('act-1', { subactivityId: 'pa-sesiones' }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockPrisma.activity.update).not.toHaveBeenCalled();
     });
   });
 
