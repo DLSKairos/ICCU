@@ -357,6 +357,11 @@ export class ActivitiesService {
   async deleteSubactivity(id: string): Promise<void> {
     const sub = await this.prisma.subactivity.findUnique({ where: { id } });
     if (!sub) throw new NotFoundException(`Subactividad '${id}' no encontrada`);
+    if (sub.isFixed) {
+      throw new BadRequestException(
+        `La subactividad '${sub.name}' es fija y no se puede eliminar`,
+      );
+    }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Borrar fotos de actividades asociadas

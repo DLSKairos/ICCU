@@ -37,11 +37,18 @@ model Process {
 // Cada proceso tiene N subactividades. El ID es también un slug
 // legible (ej: "pa-sesiones", "sst-cap") para facilitar el seed
 // y la legibilidad en logs y URLs.
+//
+// isFixed marca las subactividades hardcodeadas en el seed (ej:
+// "Cultura Organizacional" en Salud Mental, "Pecuniarios" y "No
+// Pecuniarios" en Incentivos). El admin no puede borrarlas, pero sí
+// parametriza su meta anual y puede agregar otras subactividades
+// libremente al mismo proceso.
 // ─────────────────────────────────────────────────────────────────
 model Subactivity {
-  id        String @id // slug: "pa-sesiones", "cum-celebraciones", etc.
+  id        String  @id // slug: "pa-sesiones", "cum-celebraciones", etc.
   processId String
   name      String
+  isFixed   Boolean @default(false)
 
   process    Process    @relation(fields: [processId], references: [id])
   targets    AnnualTarget[]

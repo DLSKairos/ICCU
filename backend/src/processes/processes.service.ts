@@ -10,6 +10,7 @@ type ProcessWithRelations = {
   subactivities: Array<{
     id: string;
     name: string;
+    isFixed: boolean;
     targets: Array<{ target: number; isLocked: boolean }>;
     executions: Array<{ count: number }>;
   }>;
@@ -25,6 +26,7 @@ type ProcessDetailWithRelations = {
   subactivities: Array<{
     id: string;
     name: string;
+    isFixed: boolean;
     targets: Array<{ target: number; isLocked: boolean }>;
     executions: Array<{ date: Date; count: number }>;
   }>;
@@ -58,6 +60,7 @@ export interface ProcessSummary {
 export interface SubactivitySummary {
   id: string;
   name: string;
+  isFixed: boolean;
   executed: number;
   target: number;
   isLocked: boolean;
@@ -72,6 +75,7 @@ export interface ProcessDetail {
   subactivities: {
     id: string;
     name: string;
+    isFixed: boolean;
     annualTarget: number;
     target: number;
     isLocked: boolean;
@@ -197,6 +201,7 @@ export class ProcessesService {
       subactivities: process.subactivities.map((s) => ({
         id: s.id,
         name: s.name,
+        isFixed: s.isFixed,
         annualTarget: s.targets[0]?.target ?? 0,
         target: s.targets[0]?.target ?? 0,
         isLocked: s.targets[0]?.isLocked ?? false,
@@ -236,7 +241,7 @@ export class ProcessesService {
         const isLocked = tgt.isLocked;
         const executed = s.executions.reduce((sum, e) => sum + e.count, 0);
         const progress = target > 0 ? Math.round((executed / target) * 100) : 0;
-        return { id: s.id, name: s.name, executed, target, isLocked, progress };
+        return { id: s.id, name: s.name, isFixed: s.isFixed, executed, target, isLocked, progress };
       });
 
     const executedTotal = subactivities.reduce((sum, s) => sum + s.executed, 0);

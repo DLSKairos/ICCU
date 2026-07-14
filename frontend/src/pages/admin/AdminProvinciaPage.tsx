@@ -16,6 +16,9 @@ interface AdminSubactivity {
   name: string;
   target?: number;
   isLocked?: boolean;
+  // Subactividad hardcodeada en el seed: se le parametriza la meta, pero no se
+  // puede eliminar (el backend también lo rechaza).
+  isFixed?: boolean;
   [key: string]: unknown;
 }
 
@@ -2416,10 +2419,19 @@ export default function AdminProvinciaPage() {
                   <p className="truncate" style={{ fontFamily: "'Roboto Condensed', sans-serif", fontSize: 15, color: sub.isLocked ? 'rgba(255,255,255,0.75)' : '#fff' }} title={sub.name}>
                     {sub.name}
                   </p>
-                  {sub.isLocked && (
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs" style={{ background: 'rgba(74,222,128,0.12)', color: '#86efac', fontFamily: "'Roboto Condensed', sans-serif", border: '1px solid rgba(74,222,128,0.25)', fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                      Confirmada
-                    </span>
+                  {(sub.isLocked || sub.isFixed) && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {sub.isLocked && (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs" style={{ background: 'rgba(74,222,128,0.12)', color: '#86efac', fontFamily: "'Roboto Condensed', sans-serif", border: '1px solid rgba(74,222,128,0.25)', fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                          Confirmada
+                        </span>
+                      )}
+                      {sub.isFixed && (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs" style={{ background: 'rgba(212,175,55,0.12)', color: '#D4AF37', fontFamily: "'Roboto Condensed', sans-serif", border: '1px solid rgba(212,175,55,0.28)', fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                          Fija
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 {sub.isLocked ? (
@@ -2442,21 +2454,23 @@ export default function AdminProvinciaPage() {
                         </svg>
                       )}
                     </button>
-                    <button
-                      onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
-                      disabled={deletingSubId === sub.id}
-                      className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
-                      style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
-                      title="Eliminar del plan"
-                    >
-                      {deletingSubId === sub.id ? (
-                        <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(255,154,162,0.3)', borderTopColor: '#ff9aa2' }} />
-                      ) : (
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </button>
+                    {!sub.isFixed && (
+                      <button
+                        onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
+                        disabled={deletingSubId === sub.id}
+                        className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
+                        style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
+                        title="Eliminar del plan"
+                      >
+                        {deletingSubId === sub.id ? (
+                          <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(255,154,162,0.3)', borderTopColor: '#ff9aa2' }} />
+                        ) : (
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -2471,21 +2485,23 @@ export default function AdminProvinciaPage() {
                       onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.55)'; e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
                       onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                     />
-                    <button
-                      onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
-                      disabled={deletingSubId === sub.id}
-                      className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
-                      style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
-                      title="Eliminar del plan"
-                    >
-                      {deletingSubId === sub.id ? (
-                        <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(255,154,162,0.3)', borderTopColor: '#ff9aa2' }} />
-                      ) : (
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </button>
+                    {!sub.isFixed && (
+                      <button
+                        onClick={() => setDeleteTarget({ kind: 'sub', id: sub.id, name: sub.name })}
+                        disabled={deletingSubId === sub.id}
+                        className="flex items-center justify-center shrink-0 cursor-pointer rounded-lg"
+                        style={{ width: 36, height: 44, background: 'rgba(224,9,20,0.10)', border: '1px solid rgba(224,9,20,0.22)', color: '#ff9aa2', opacity: deletingSubId === sub.id ? 0.5 : 1 }}
+                        title="Eliminar del plan"
+                      >
+                        {deletingSubId === sub.id ? (
+                          <span className="inline-block rounded-full border-2 animate-spin" style={{ width: 12, height: 12, borderColor: 'rgba(255,154,162,0.3)', borderTopColor: '#ff9aa2' }} />
+                        ) : (
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
                   </>
                 )}
               </div>

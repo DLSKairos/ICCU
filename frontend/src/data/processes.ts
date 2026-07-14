@@ -6,6 +6,7 @@ export interface Execution {
 export interface Subactivity {
   id: string;
   name: string;
+  isFixed?: boolean;
   annualTarget: number;
   executions: Execution[];
 }
@@ -45,7 +46,7 @@ export const PROVINCE_TO_PROCESS: Record<string, string> = {
   'guavio':            'actividades-deportivas',
   'medina':            'dia-salud-sst',
   'rionegro':          'pre-pensionados',
-  'magdalena-centro':  'clima-organizacional',
+  'magdalena-centro':  'incentivos',
   'gualiva':           'teletrabajo',
   'sabana-centro':     'capacitaciones',
   'sabana-occidente':  'atencion-psicosocial',
