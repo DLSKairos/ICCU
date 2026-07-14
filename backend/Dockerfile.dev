@@ -4,4 +4,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 EXPOSE 5000
-CMD ["npm", "run", "start:dev"]
+# El generate va en el arranque, no en el build: prisma.config.ts exige
+# DATABASE_URL, que solo existe cuando el contenedor corre. Además el bind
+# mount de ./backend puede traer un schema.prisma más nuevo que el de la imagen.
+CMD ["sh", "-c", "npx prisma generate && npm run start:dev"]

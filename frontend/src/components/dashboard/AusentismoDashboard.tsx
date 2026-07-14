@@ -7,6 +7,7 @@ import { PeriodSelector } from '../dashboard/PeriodSelector';
 import type { Period } from '../../utils/metrics';
 import { absenceApi } from '../../services/api';
 import type { AbsenceStats, PersonAbsenceStats, EmployeeSearchResult, RegisteredEmployee } from '../../services/api';
+import { noSpellCheck } from '../../utils/textFields';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -501,6 +502,7 @@ export function AusentismoDashboard({ processId, processName: _processName, proc
                 <input
                   ref={inputRef}
                   type="text"
+                  {...noSpellCheck}
                   value={empQuery}
                   onChange={e => handleEmpInput(e.target.value)}
                   onFocus={() => empResults.length > 0 && setDropdownOpen(true)}

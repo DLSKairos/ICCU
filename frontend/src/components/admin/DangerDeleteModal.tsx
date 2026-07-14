@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { noSpellCheck } from '../../utils/textFields';
 
 interface DangerDeleteModalProps {
   open: boolean;
@@ -192,6 +193,7 @@ export function DangerDeleteModal({
 
               <input
                 type="text"
+                {...noSpellCheck}
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && matches && !loading) onConfirm(); }}

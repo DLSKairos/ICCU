@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { IccuLogo } from '../../components/ui/IccuLogo';
+import { noSpellCheck } from '../../utils/textFields';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -139,6 +140,7 @@ export default function AdminLoginPage() {
                 type="text"
                 autoComplete="username"
                 autoCapitalize="none"
+                {...noSpellCheck}
                 value={username}
                 onChange={e => {
                   setUsername(e.target.value);
@@ -194,6 +196,7 @@ export default function AdminLoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
+                  {...noSpellCheck}
                   value={password}
                   onChange={e => {
                     setPassword(e.target.value);

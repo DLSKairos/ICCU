@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../../components/admin/LoadingSpinner';
 import { ErrorMessage } from '../../components/admin/ErrorMessage';
 import { DangerDeleteModal } from '../../components/admin/DangerDeleteModal';
 import { adminApi, absenceApi } from '../../services/api';
+import { spellCheckEs, noSpellCheck } from '../../utils/textFields';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -460,6 +461,7 @@ function ResetModal({ onClose }: ResetModalProps) {
               <input
                 id="confirm-reset"
                 type="text"
+                {...noSpellCheck}
                 value={confirmText}
                 onChange={e => setConfirmText(e.target.value)}
                 placeholder={confirmPhrase}
@@ -881,6 +883,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
               <input
                 id="abs-identification"
                 type="text"
+                {...noSpellCheck}
                 value={identification}
                 onChange={e => { setIdentification(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('identification'); if (formErrors.identification) setFormErrors(p => ({ ...p, identification: false })); }}
                 onFocus={e => { setActiveEmpField('identification'); if (empResults.length > 0) setShowEmpDropdown(true); e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
@@ -919,6 +922,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
               <input
                 id="abs-employee-name"
                 type="text"
+                {...noSpellCheck}
                 value={employeeName}
                 onChange={e => { setEmployeeName(e.target.value); setEmpQuery(e.target.value); setActiveEmpField('employeeName'); if (formErrors.employeeName) setFormErrors(p => ({ ...p, employeeName: false })); }}
                 onFocus={e => { setActiveEmpField('employeeName'); if (empResults.length > 0) setShowEmpDropdown(true); e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
@@ -1129,6 +1133,7 @@ function AusentismoPanel({ processId, year }: { processId: string; year: number 
               {!diagnosticCode && (
                 <input
                   type="text"
+                  {...noSpellCheck}
                   value={cie10Query}
                   onChange={e => { setCie10Query(e.target.value); }}
                   onFocus={() => { if (cie10Results.length > 0) setShowCie10Dropdown(true); }}
@@ -1995,6 +2000,7 @@ export default function AdminProvinciaPage() {
                 <label style={labelStyle}>Nombre *</label>
                 <input
                   type="text"
+                  {...spellCheckEs}
                   placeholder={hasSubs ? 'Ej: Atenciones Individuales' : 'Ej: Jornada de Salud'}
                   value={newSubName}
                   onChange={e => { setNewSubName(e.target.value); if (addNewError) setAddNewError(null); }}
@@ -2468,6 +2474,7 @@ export default function AdminProvinciaPage() {
                 <input
                   id="act-title"
                   type="text"
+                  {...spellCheckEs}
                   value={actTitle}
                   onChange={e => {
                     setActTitle(e.target.value);
@@ -2500,6 +2507,7 @@ export default function AdminProvinciaPage() {
                 <textarea
                   id="act-description"
                   rows={3}
+                  {...spellCheckEs}
                   value={actDescription}
                   onChange={e => setActDescription(e.target.value)}
                   placeholder="Describe la actividad realizada..."
@@ -2521,6 +2529,7 @@ export default function AdminProvinciaPage() {
                 <input
                   id="act-message"
                   type="text"
+                  {...spellCheckEs}
                   value={actMessage}
                   onChange={e => setActMessage(e.target.value)}
                   placeholder="Mensaje o frase motivacional"
