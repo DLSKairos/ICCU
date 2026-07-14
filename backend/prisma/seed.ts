@@ -23,23 +23,8 @@ const PROCESSES: Array<{ id: string; name: string; provinceId: string; descripti
   { id: 'seguridad-vial',         name: 'Seguridad Vial',                       provinceId: 'nueva-provincia',  description: 'Fortalecimiento de la identidad institucional y los valores corporativos del ICCU.' },
 ];
 
-const HISTORICAL: Array<{ processId: string; year: number; percentage: number }> = [
-  { processId: 'fechas-especiales',      year: 2023, percentage: 78  }, { processId: 'fechas-especiales',      year: 2024, percentage: 91  },
-  { processId: 'feria-servicios',        year: 2023, percentage: 100 }, { processId: 'feria-servicios',        year: 2024, percentage: 100 },
-  { processId: 'salud-mental',           year: 2023, percentage: 85  }, { processId: 'salud-mental',           year: 2024, percentage: 89  },
-  { processId: 'actividades-deportivas', year: 2023, percentage: 100 }, { processId: 'actividades-deportivas', year: 2024, percentage: 100 },
-  { processId: 'dia-salud-sst',          year: 2023, percentage: 72  }, { processId: 'dia-salud-sst',          year: 2024, percentage: 87  },
-  { processId: 'pre-pensionados',        year: 2023, percentage: 80  }, { processId: 'pre-pensionados',        year: 2024, percentage: 88  },
-  { processId: 'clima-organizacional',   year: 2023, percentage: 61  }, { processId: 'clima-organizacional',   year: 2024, percentage: 74  },
-  { processId: 'teletrabajo',            year: 2023, percentage: 90  }, { processId: 'teletrabajo',            year: 2024, percentage: 95  },
-  { processId: 'capacitaciones',         year: 2023, percentage: 94  }, { processId: 'capacitaciones',         year: 2024, percentage: 97  },
-  { processId: 'atencion-psicosocial',   year: 2023, percentage: 68  }, { processId: 'atencion-psicosocial',   year: 2024, percentage: 79  },
-  { processId: 'medicina-preventiva',    year: 2023, percentage: 70  }, { processId: 'medicina-preventiva',    year: 2024, percentage: 81  },
-  { processId: 'copasst',                year: 2023, percentage: 75  }, { processId: 'copasst',                year: 2024, percentage: 88  },
-  { processId: 'comite-convivencia',     year: 2023, percentage: 55  }, { processId: 'comite-convivencia',     year: 2024, percentage: 72  },
-  { processId: 'atencion-emergencias',   year: 2023, percentage: 45  }, { processId: 'atencion-emergencias',   year: 2024, percentage: 60  },
-  { processId: 'seguridad-vial',         year: 2023, percentage: 52  }, { processId: 'seguridad-vial',         year: 2024, percentage: 68  },
-];
+// El dashboard arranca sin histórico: los porcentajes anuales solo se crean
+// cuando el reinicio anual cierra un año (ver annual-reset.service).
 
 async function main() {
   console.log('Iniciando seed ICCU...');
@@ -68,16 +53,6 @@ async function main() {
     });
   }
   console.log(`OK: ${PROCESSES.length} procesos`);
-
-  // Crear históricos 2023 y 2024
-  for (const h of HISTORICAL) {
-    await prisma.historicalPercentage.upsert({
-      where: { processId_year: { processId: h.processId, year: h.year } },
-      update: { percentage: h.percentage },
-      create: h,
-    });
-  }
-  console.log(`OK: ${HISTORICAL.length} registros históricos`);
 
   // ── Importar catálogo CIE-10 (solo si la tabla está vacía) ──────────────────
   const cie10Count = await prisma.cie10Code.count();
